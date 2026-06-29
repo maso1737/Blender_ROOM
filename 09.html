@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLENDER ROOM // LEC_09 – 布シミュ②:【実習】ベッド・カーテン</title>
+<script src="./image-slot.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700;900&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500;1,700&display=swap" rel="stylesheet">
+<style>
+  html{scrollbar-color:rgba(255,79,168,0.6) rgba(20,10,40,0.6)}
+  body{margin:0;color:#F8EFFF;
+    background:
+      radial-gradient(ellipse 80% 55% at 88% -10%, rgba(184,80,255,0.32), transparent 60%),
+      radial-gradient(ellipse 65% 50% at -10% 18%, rgba(255,122,194,0.17), transparent 60%),
+      radial-gradient(ellipse 70% 55% at 50% 115%, rgba(90,233,255,0.14), transparent 65%),
+      linear-gradient(180deg,#2b1852 0%,#190d34 100%);
+    background-attachment:fixed;}
+  ::selection{background:rgba(255,79,168,0.5)}
+  @keyframes kfTwinkle{0%,100%{opacity:0.5}50%{opacity:0.95}}
+  @keyframes kfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  /* hero: blanket drops -> collides on bed -> drapes over edges -> sparkle */
+  @keyframes kfH9Drop{0%{transform:translateY(-50px); opacity:0}16%{opacity:1}48%,100%{transform:translateY(0); opacity:1}}
+  @keyframes kfH9Flap{0%,46%{transform:scaleY(0.05)}62%,100%{transform:scaleY(1)}}
+  @keyframes kfH9Spark{0%,64%{opacity:0;transform:scale(0.3)}72%,88%{opacity:1;transform:scale(1)}100%{opacity:0}}
+  /* section 01 collision drop */
+  @keyframes kfColDrop{0%{transform:translateY(-44px); opacity:0}20%{opacity:1}50%,100%{transform:translateY(0); opacity:1}}
+  @keyframes kfColFlap{0%,48%{transform:scaleY(0.05)}64%,100%{transform:scaleY(1)}}
+  @keyframes kfColImpact{0%,44%{opacity:0;transform:scaleX(0.4)}52%{opacity:1;transform:scaleX(1)}66%,100%{opacity:0}}
+  /* section 02 curtain sway + pins */
+  @keyframes kfCurtain{0%,100%{transform:skewX(-2.5deg) translateX(-2px)}50%{transform:skewX(2.5deg) translateX(2px)}}
+  @keyframes kfPinGlow{0%,100%{box-shadow:0 0 6px rgba(255,79,168,0.6)}50%{box-shadow:0 0 14px rgba(255,79,168,0.95)}}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:0.001s !important;animation-iteration-count:1 !important}}
+</style>
+</head>
+<body>
+<div style="font-family:'Noto Sans JP',sans-serif; min-height:100vh; overflow-x:hidden">
+
+  <div style="position:fixed; inset:0; pointer-events:none; z-index:0; mix-blend-mode:screen; opacity:0.85; animation:kfTwinkle 5s ease-in-out infinite; background-image:radial-gradient(1.5px 1.5px at 22px 34px, rgba(255,255,255,0.8), transparent 60%),radial-gradient(1px 1px at 120px 90px, rgba(255,210,122,0.8), transparent 60%),radial-gradient(1.5px 1.5px at 200px 160px, rgba(181,142,255,0.8), transparent 60%),radial-gradient(1px 1px at 280px 50px, rgba(90,233,255,0.7), transparent 60%),radial-gradient(1.5px 1.5px at 330px 210px, rgba(255,122,194,0.7), transparent 60%); background-size:380px 260px"></div>
+
+  <!-- TOPBAR -->
+  <div style="position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:16px; height:52px; padding:0 22px; background:rgba(24,12,46,0.82); backdrop-filter:blur(8px); border-bottom:1px solid rgba(255,210,122,0.18)">
+    <div style="display:flex; align-items:center; gap:10px">
+      <span style="color:#FFD27A; font-size:14px">✦</span>
+      <span style="display:inline-block; padding-right:0.35em; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic; font-size:19px; letter-spacing:0.04em; background:linear-gradient(120deg,#FFE9B0,#FFD27A 26%,#FF4FA8 62%,#B58EFF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">BLENDER ROOM</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(181,142,255,0.85)">部屋を、つくろう。</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.25em; color:#FFD27A">LEC 09 / 15</span>
+      <a href="index.html" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:#5AE9FF; text-decoration:none; border:1px solid rgba(90,233,255,0.4); border-radius:7px; padding:6px 12px; background:rgba(90,233,255,0.06)" data-sh="background:rgba(90,233,255,0.16);box-shadow:0 0 10px rgba(90,233,255,0.4)">全15回マップ ▸</a>
+    </div>
+  </div>
+
+  <div style="position:relative; z-index:1; max-width:960px; margin:0 auto; padding:0 26px 80px">
+
+    <!-- HERO -->
+    <div style="padding:64px 0 22px">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#FFD27A">BLENDER_ROOM // LEC_09</span>
+        <span style="height:1px; width:60px; background:linear-gradient(90deg,#FFD27A,transparent)"></span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:rgba(181,142,255,0.9)">布シミュ②【実習】 ── ベッド・カーテン</span>
+      </div>
+      <div style="display:flex; align-items:baseline; gap:18px; margin-top:18px; flex-wrap:wrap">
+        <span style="display:inline-block; padding-right:0.18em; padding-left:0.06em; padding-bottom:0.14em; font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:92px; line-height:1; letter-spacing:-0.03em; background:linear-gradient(120deg,#FFE9B0,#FFD27A 26%,#FF4FA8 62%,#B58EFF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 0 26px rgba(255,79,168,0.35))">09</span>
+        <h1 style="margin:0; font-family:'Noto Sans JP',sans-serif; font-weight:900; font-size:40px; line-height:1.25; letter-spacing:0.02em; background:linear-gradient(110deg,#FFFFFF,#FFD9EE 45%,#CDB4FF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">布を、ぶつけて<br>掛けて、垂らす</h1>
+      </div>
+      <p style="margin:16px 0 0; font-size:15px; line-height:2; color:rgba(248,239,255,0.78); letter-spacing:0.06em">前回の布物理を実戦投入。今日のカギは2つだけ。<br>布が物体で止まる<strong style="color:#5AE9FF">「コリジョン(ぶつかる判定)」</strong>と、布の端を画鋲で留める<strong style="color:#FF7AC2">「ピン留め」</strong>。布団とカーテンを作ります。</p>
+
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:18px; margin-top:34px; align-items:stretch">
+        <div style="border:1px solid rgba(255,210,122,0.25); border-radius:14px; padding:24px 26px; background:linear-gradient(180deg,rgba(255,122,194,0.07),rgba(181,142,255,0.04))">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#FFD27A">TODAY'S GOAL ── 今日のゴール</div>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px">
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#FF7AC2; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#F8EFFF">ベッドに<strong style="color:#5AE9FF">コリジョン</strong>を付け、布団を上から落として<strong style="color:#5AE9FF">自然に掛ける</strong></span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#FF7AC2; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#F8EFFF">カーテンの上端を<strong style="color:#FF7AC2">ピン留め</strong>して、レールから垂れるヒダを作る</span>
+            </div>
+          </div>
+          <div style="margin-top:20px; padding-top:16px; border-top:1px dashed rgba(181,142,255,0.3); font-size:13px; line-height:2; color:rgba(248,239,255,0.66); letter-spacing:0.04em"><strong style="color:#FFD27A">布だけが物理。</strong>ベッドやレールは「ぶつかる相手 / 留める場所」。役割を分けて考えれば迷いません。</div>
+        </div>
+        <div style="border:1px solid rgba(181,142,255,0.3); border-radius:14px; padding:20px 22px 16px; background:rgba(13,6,32,0.45); display:flex; flex-direction:column">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#5AE9FF">本日の成果物</div>
+          <div style="position:relative; flex:1; min-height:190px; display:flex; align-items:flex-end; justify-content:center; padding-bottom:18px">
+            <div style="position:relative; width:170px; height:130px">
+              <!-- bed -->
+              <div style="position:absolute; left:24px; right:24px; bottom:6px; height:34px; background:rgba(181,142,255,0.2); border:2px solid #B58EFF; border-radius:6px"></div>
+              <!-- blanket draping (drops in) -->
+              <div style="position:absolute; left:18px; right:18px; bottom:22px; height:30px; transform-origin:top center; animation:kfH9Drop 8s ease-in-out infinite">
+                <div style="position:absolute; left:0; right:0; top:0; height:18px; background:linear-gradient(180deg,rgba(255,122,194,0.34),rgba(255,122,194,0.22)); border:2px solid #FF7AC2; border-radius:8px 8px 0 0"></div>
+                <span style="position:absolute; left:0; top:16px; width:16px; height:26px; background:rgba(255,122,194,0.28); border:2px solid #FF7AC2; border-top:none; border-radius:0 0 6px 6px; transform-origin:top; animation:kfH9Flap 8s ease-in-out infinite"></span>
+                <span style="position:absolute; right:0; top:16px; width:16px; height:26px; background:rgba(255,122,194,0.28); border:2px solid #FF7AC2; border-top:none; border-radius:0 0 6px 6px; transform-origin:top; animation:kfH9Flap 8s ease-in-out infinite"></span>
+              </div>
+              <span style="position:absolute; left:50%; top:6px; transform:translateX(-50%); color:#FFD27A; font-size:17px; animation:kfH9Spark 8s linear infinite; text-shadow:0 0 12px rgba(255,210,122,0.9)">✦</span>
+            </div>
+          </div>
+          <div style="font-size:13px; font-weight:700; color:rgba(248,239,255,0.85); text-align:center; letter-spacing:0.06em; line-height:1.8">布団がかかったベッド、<br>または窓辺のカーテン<br><span style="font-weight:400; font-size:11.5px; color:rgba(181,142,255,0.95)">落として/留めて、自然に</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 01 コリジョン -->
+    <div data-reveal="1" style="margin-top:64px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#FFD27A; line-height:1">01</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#F8EFFF">布団を掛ける ── コリジョン</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(181,142,255,0.9)">COLLISION // ぶつかる判定</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(248,239,255,0.7); letter-spacing:0.04em">布をそのまま落とすと<strong style="color:#FF7AC2">ベッドをすり抜けて床へ落ちます。</strong>ベッド側に「ぶつかる判定」を与えると、布がその上で止まって掛かります。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">1</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#F8EFFF">ベッドに <span style="color:#5AE9FF">コリジョン</span> を付ける</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)">ベッド本体を選び、物理プロパティで<strong style="color:#5AE9FF">コリジョン</strong>を追加。これで布がぶつかる「床」になります。</div>
+            </div>
+          </div>
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">2</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#F8EFFF">布団を上に浮かせて、再生</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)">クロスの布を<strong style="color:#5AE9FF">ベッドの少し上</strong>に置いて <span style="display:inline-flex; align-items:center; justify-content:center; min-width:56px; height:24px; padding:0 8px; border:1px solid rgba(255,79,168,0.5); border-bottom:3px solid rgba(255,79,168,0.6); border-radius:6px; background:rgba(255,79,168,0.08); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#FF7AC2; vertical-align:middle">Space</span>。重力でふわっと掛かります。</div>
+            </div>
+          </div>
+          <div style="border:1px solid rgba(255,79,168,0.35); border-radius:14px; padding:18px 22px; background:linear-gradient(180deg,rgba(255,79,168,0.08),rgba(255,122,194,0.03)); display:flex; gap:14px; align-items:flex-start">
+            <span style="color:#FF7AC2; font-size:15px; line-height:1.6; flex-shrink:0">✦</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FF7AC2">すり抜ける時は</div>
+              <div style="margin-top:6px; font-size:13px; line-height:1.95; color:rgba(248,239,255,0.82)">布の<strong style="color:#F8EFFF">「セルフコリジョン」</strong>と、コリジョン側の<strong style="color:#5AE9FF">厚み(Thickness)</strong>を少し上げると、貫通が止まります。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- collision visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(181,142,255,0.3); border-radius:14px; background:#160b30; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:22px 0">
+          <div style="position:relative; width:120px; height:96px">
+            <!-- bed block -->
+            <div style="position:absolute; left:24px; right:24px; bottom:14px; height:26px; background:rgba(181,142,255,0.2); border:2px solid #B58EFF; border-radius:5px"></div>
+            <!-- impact line -->
+            <span style="position:absolute; left:22px; right:22px; bottom:38px; height:2px; background:#5AE9FF; box-shadow:0 0 10px rgba(90,233,255,0.9); transform-origin:center; animation:kfColImpact 8s ease-in-out infinite"></span>
+            <!-- blanket -->
+            <div style="position:absolute; left:18px; right:18px; bottom:30px; height:24px; transform-origin:top center; animation:kfColDrop 8s ease-in-out infinite">
+              <div style="position:absolute; left:0; right:0; top:0; height:14px; background:rgba(255,122,194,0.32); border:2px solid #FF7AC2; border-radius:7px 7px 0 0"></div>
+              <span style="position:absolute; left:0; top:12px; width:13px; height:20px; background:rgba(255,122,194,0.24); border:2px solid #FF7AC2; border-top:none; border-radius:0 0 5px 5px; transform-origin:top; animation:kfColFlap 8s ease-in-out infinite"></span>
+              <span style="position:absolute; right:0; top:12px; width:13px; height:20px; background:rgba(255,122,194,0.24); border:2px solid #FF7AC2; border-top:none; border-radius:0 0 5px 5px; transform-origin:top; animation:kfColFlap 8s ease-in-out infinite"></span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:16px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; color:rgba(181,142,255,0.9)">落ちて止まる</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 11px; border:1px solid rgba(90,233,255,0.5); border-bottom:3px solid rgba(90,233,255,0.6); border-radius:6px; background:rgba(90,233,255,0.08); font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; color:#5AE9FF">コリジョン</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 02 ピン留め -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#FFD27A; line-height:1">02</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#F8EFFF">カーテンを垂らす ── ピン留め</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(181,142,255,0.9)">PIN // 上端だけ固定して垂らす</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(248,239,255,0.7); letter-spacing:0.04em">布をそのまま再生すると<strong style="color:#FF7AC2">床に落ちてしまう。</strong>上端の頂点だけ「動かない」と教えれば、レールから垂れるカーテンになります。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div style="border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03))">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FFD27A; margin-bottom:14px">手順 ── 上端をピン留め</div>
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:13px; line-height:1.9; color:rgba(248,239,255,0.8)">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#FFD27A">上端を選択</span>
+              <span style="color:rgba(248,239,255,0.6)">→</span>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#5AE9FF">頂点グループに登録</span>
+              <span style="color:rgba(248,239,255,0.6)">→</span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 11px; border:1px solid rgba(255,79,168,0.55); border-bottom:3px solid rgba(255,79,168,0.65); border-radius:6px; background:rgba(255,79,168,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:#FF7AC2">Pin</span>
+              <span style="color:rgba(248,239,255,0.6)">に指定</span>
+            </div>
+            <div style="margin-top:14px; padding-top:12px; border-top:1px dashed rgba(181,142,255,0.3); font-size:12.5px; line-height:1.9; color:rgba(181,142,255,0.95)">クロス設定の<strong style="color:#5AE9FF">「シェイプ → ピングループ」</strong>にそのグループを指定。再生すると上端だけ残って垂れます。</div>
+          </div>
+          <div style="border:1px solid rgba(90,233,255,0.32); border-radius:14px; padding:18px 22px; background:linear-gradient(180deg,rgba(90,233,255,0.07),rgba(181,142,255,0.03)); display:flex; gap:14px; align-items:flex-start">
+            <span style="color:#5AE9FF; font-size:15px; line-height:1.6; flex-shrink:0">▸</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#5AE9FF">ヒダを綺麗に</div>
+              <div style="margin-top:6px; font-size:13px; line-height:1.95; color:rgba(248,239,255,0.82)">上端を<strong style="color:#F8EFFF">少し波打たせて</strong>からピン留めすると、自然なウェーブのヒダに。風(フォースフィールド)を足せばなびきます。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- curtain visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(181,142,255,0.3); border-radius:14px; background:#160b30; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:22px 0">
+          <div style="position:relative; width:120px; height:96px; display:flex; flex-direction:column; align-items:center">
+            <!-- rail -->
+            <div style="position:relative; width:96px; height:6px; background:rgba(181,142,255,0.3); border:1.5px solid #B58EFF; border-radius:3px; z-index:2"></div>
+            <!-- pins -->
+            <div style="position:absolute; top:0; left:50%; transform:translateX(-50%); display:flex; gap:16px; z-index:3">
+              <span style="width:7px; height:7px; border-radius:50%; background:#FF4FA8; animation:kfPinGlow 3s ease-in-out infinite"></span>
+              <span style="width:7px; height:7px; border-radius:50%; background:#FF4FA8; animation:kfPinGlow 3s ease-in-out infinite"></span>
+              <span style="width:7px; height:7px; border-radius:50%; background:#FF4FA8; animation:kfPinGlow 3s ease-in-out infinite"></span>
+              <span style="width:7px; height:7px; border-radius:50%; background:#FF4FA8; animation:kfPinGlow 3s ease-in-out infinite"></span>
+            </div>
+            <!-- curtain pleats -->
+            <div style="display:flex; gap:3px; margin-top:1px; transform-origin:top center; animation:kfCurtain 5s ease-in-out infinite">
+              <span style="width:11px; height:64px; background:linear-gradient(180deg,rgba(255,122,194,0.3),rgba(181,142,255,0.16)); border:1.5px solid rgba(255,122,194,0.7); border-radius:0 0 6px 6px"></span>
+              <span style="width:11px; height:64px; background:linear-gradient(180deg,rgba(255,122,194,0.22),rgba(181,142,255,0.12)); border:1.5px solid rgba(255,122,194,0.55); border-radius:0 0 6px 6px"></span>
+              <span style="width:11px; height:64px; background:linear-gradient(180deg,rgba(255,122,194,0.3),rgba(181,142,255,0.16)); border:1.5px solid rgba(255,122,194,0.7); border-radius:0 0 6px 6px"></span>
+              <span style="width:11px; height:64px; background:linear-gradient(180deg,rgba(255,122,194,0.22),rgba(181,142,255,0.12)); border:1.5px solid rgba(255,122,194,0.55); border-radius:0 0 6px 6px"></span>
+              <span style="width:11px; height:64px; background:linear-gradient(180deg,rgba(255,122,194,0.3),rgba(181,142,255,0.16)); border:1.5px solid rgba(255,122,194,0.7); border-radius:0 0 6px 6px"></span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:14px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; color:rgba(181,142,255,0.9)">上端を固定</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 11px; border:1px solid rgba(255,79,168,0.55); border-bottom:3px solid rgba(255,79,168,0.65); border-radius:6px; background:rgba(255,79,168,0.08); font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; color:#FF7AC2">ピン留め</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 03 仕上げ -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#FFD27A; line-height:1">03</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#F8EFFF">良い形で止めて、焼き付ける</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(181,142,255,0.9)">FINISH // 適用してデータを軽く</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(248,239,255,0.7); letter-spacing:0.04em">前回と同じ仕上げ。<strong style="color:#FF7AC2">いちばん綺麗なフレームで停止</strong>し、クロスを<strong style="color:#FFD27A">適用</strong>して形を固定します。</p>
+
+      <div style="display:flex; flex-direction:column; gap:14px; margin-top:24px">
+        <div style="display:flex; flex-wrap:wrap; gap:12px">
+          <div style="flex:1; min-width:200px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:18px 20px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03))">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FFD27A">① 止める</div>
+            <div style="margin-top:8px; font-size:13px; line-height:1.9; color:rgba(248,239,255,0.8)">タイムラインを流し、シワとヒダが<strong style="color:#5AE9FF">いちばん可愛い瞬間</strong>で停止。</div>
+          </div>
+          <div style="flex:1; min-width:200px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:18px 20px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03))">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FFD27A">② 適用</div>
+            <div style="margin-top:8px; font-size:13px; line-height:1.9; color:rgba(248,239,255,0.8)">クロスを<strong style="color:#FFD27A">適用</strong>して、その形をメッシュに焼き付け。再生しても崩れません。</div>
+          </div>
+          <div style="flex:1; min-width:200px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:18px 20px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03))">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FFD27A">③ 整える</div>
+            <div style="margin-top:8px; font-size:13px; line-height:1.9; color:rgba(248,239,255,0.8)"><strong style="color:#5AE9FF">スムーズシェード</strong>で面を整え、ソリッド化で厚みを足して完成。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREENSHOT SLOT -->
+    <div data-reveal="1" style="margin-top:48px; border:1px dashed rgba(181,142,255,0.45); border-radius:14px; padding:18px; background:rgba(13,6,32,0.4)">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.3em; color:rgba(181,142,255,0.9); margin-bottom:12px">YOUR SHOT ── 布団のベッド or カーテンのスクショをここへ</div>
+      <image-slot id="lec09-cloth" shape="rounded" radius="10" placeholder="布団を掛けたベッド、または垂れるカーテンをドラッグ" style="display:block; width:100%; height:300px"></image-slot>
+    </div>
+
+    <!-- SUMMARY -->
+    <div data-reveal="1" style="margin-top:48px; border:1px solid rgba(255,210,122,0.3); border-radius:16px; padding:28px 30px; background:linear-gradient(180deg,rgba(255,122,194,0.08),rgba(90,233,255,0.04)); position:relative; overflow:hidden">
+      <span style="position:absolute; right:18px; top:12px; color:#FFD27A; font-size:18px; animation:kfFloat 4s ease-in-out infinite">✦</span>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#FFD27A">RECAP ── 今日のキー、ぜんぶ</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px">
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(90,233,255,0.5); border-radius:8px; padding:7px 12px; background:rgba(90,233,255,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#5AE9FF">コリジョン</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">布がぶつかって止まる</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(255,79,168,0.5); border-radius:8px; padding:7px 12px; background:rgba(255,79,168,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#FF7AC2">ピン留め</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">上端を固定して垂らす</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(255,210,122,0.5); border-radius:8px; padding:7px 12px; background:rgba(255,210,122,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#FFD27A">適用</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">良い形を焼き付け</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(181,142,255,0.35); border-radius:8px; padding:7px 12px; background:rgba(248,239,255,0.05); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#5AE9FF">役割分担</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">布=物理 / 相手=判定</span></span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:24px; padding-top:18px; border-top:1px dashed rgba(181,142,255,0.3); flex-wrap:wrap">
+        <div style="font-size:13px; line-height:1.9; color:rgba(248,239,255,0.75)">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#5AE9FF">NEXT ▸ LEC_10</span><br>
+          <strong style="color:#F8EFFF">UV展開とアセット管理 ── 3Dに絵を塗るための「展開図(画用紙)」を開く。ここから章が変わります。</strong>
+        </div>
+        <div style="display:flex; gap:10px">
+          <a href="08.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#5AE9FF; text-decoration:none; border:1px solid rgba(90,233,255,0.4); border-radius:9px; padding:12px 18px; background:rgba(90,233,255,0.06)" data-sh="background:rgba(90,233,255,0.15)">◂ 第8回</a>
+          <a href="10.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#22103d; text-decoration:none; border-radius:9px; padding:12px 20px; background:linear-gradient(135deg,#FF4FA8,#B850FF); font-weight:600; box-shadow:0 0 18px rgba(255,79,168,0.4)" data-sh="box-shadow:0 0 28px rgba(255,79,168,0.65)">第10回へ ▸</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:48px; display:flex; align-items:center; justify-content:center; gap:12px; opacity:0.65">
+      <img src="assets/blender_logo.png" alt="Blender" style="height:22px; filter:drop-shadow(0 0 6px rgba(255,255,255,0.2))">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(181,142,255,0.8)">BLENDER ROOM // アニメ美術のためのBlender入門 · 全15回</span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  document.querySelectorAll('[data-sh]').forEach(function(el){
+    var b=el.getAttribute('style')||'';
+    el.addEventListener('mouseenter',function(){el.style.cssText=b+';'+el.getAttribute('data-sh');});
+    el.addEventListener('mouseleave',function(){el.style.cssText=b;});
+  });
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target);}
+    });
+  },{threshold:0.06});
+  document.querySelectorAll('[data-reveal]').forEach(function(el){
+    var r=el.getBoundingClientRect();
+    if(r.top<window.innerHeight*0.92)return;
+    el.style.opacity='0';el.style.transform='translateY(18px)';
+    el.style.transition='opacity 0.7s ease,transform 0.7s cubic-bezier(0.22,1,0.36,1)';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>

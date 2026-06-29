@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLENDER ROOM // LEC_07 – 有機的モデリング:ソファと細分割</title>
+<script src="./image-slot.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700;900&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500;1,700&display=swap" rel="stylesheet">
+<style>
+  html{scrollbar-color:rgba(255,79,168,0.6) rgba(20,10,40,0.6)}
+  body{margin:0;color:#F8EFFF;
+    background:
+      radial-gradient(ellipse 80% 55% at 88% -10%, rgba(184,80,255,0.32), transparent 60%),
+      radial-gradient(ellipse 65% 50% at -10% 18%, rgba(255,122,194,0.17), transparent 60%),
+      radial-gradient(ellipse 70% 55% at 50% 115%, rgba(90,233,255,0.14), transparent 65%),
+      linear-gradient(180deg,#2b1852 0%,#190d34 100%);
+    background-attachment:fixed;}
+  ::selection{background:rgba(255,79,168,0.5)}
+  @keyframes kfTwinkle{0%,100%{opacity:0.5}50%{opacity:0.95}}
+  @keyframes kfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  /* hero: half sofa -> mirror reflects right -> subdivision rounds it -> sparkle */
+  @keyframes kfH7Mir{0%,12%{opacity:0;transform:scaleX(0.02)}28%,100%{opacity:1;transform:scaleX(1)}}
+  @keyframes kfH7Line{0%,8%{opacity:0}14%{opacity:1}26%{opacity:1}40%,100%{opacity:0.18}}
+  @keyframes kfH7Round{0%,30%{border-radius:2px}54%,100%{border-radius:13px}}
+  @keyframes kfH7RoundSm{0%,30%{border-radius:1px}54%,100%{border-radius:8px}}
+  @keyframes kfH7Spark{0%,58%{opacity:0;transform:scale(0.3)}66%,82%{opacity:1;transform:scale(1)}100%{opacity:0}}
+  /* section 01 mirror: left half static, right half flips in */
+  @keyframes kfMirSrc{0%,100%{box-shadow:0 0 8px rgba(255,79,168,0.55)}50%{box-shadow:0 0 16px rgba(255,79,168,0.9)}}
+  @keyframes kfMirIn{0%,22%{opacity:0;transform:scaleX(0.02)}40%,100%{opacity:1;transform:scaleX(1)}}
+  @keyframes kfMirLine{0%,18%{opacity:0.2}24%,38%{opacity:1}50%,100%{opacity:0.32}}
+  @keyframes kfMirFlash{0%,30%{opacity:0;transform:scale(0.3)}40%{opacity:1;transform:scale(1.4)}54%,100%{opacity:0}}
+  /* section 02 subdivision: blocky -> Ctrl+1 -> Ctrl+2 */
+  @keyframes kfSubBox{0%,18%{border-radius:2px}40%{border-radius:14px}66%,100%{border-radius:34px}}
+  @keyframes kfSubGrid{0%,18%{opacity:0.16}40%{opacity:0.5}66%,100%{opacity:0.9}}
+  @keyframes kfSubK1{0%,22%,100%{transform:none;background-color:rgba(248,239,255,0.07);color:#F8EFFF;box-shadow:none}28%,38%{transform:translateY(2px) scale(0.96);background-color:#5AE9FF;color:#0a2630;box-shadow:0 0 16px rgba(90,233,255,0.85)}}
+  @keyframes kfSubK2{0%,46%,100%{transform:none;background-color:rgba(248,239,255,0.07);color:#F8EFFF;box-shadow:none}52%,64%{transform:translateY(2px) scale(0.96);background-color:#FF4FA8;color:#22103d;box-shadow:0 0 16px rgba(255,79,168,0.85)}}
+  /* section 03 loop cut: support edge appears -> corner tightens */
+  @keyframes kfLoopBlob{0%,30%{border-radius:30px}52%{border-radius:14px}70%,100%{border-radius:14px}}
+  @keyframes kfLoopLine{0%,30%{opacity:0;transform:scaleY(0.1)}44%,100%{opacity:1;transform:scaleY(1)}}
+  @keyframes kfLoopK{0%,24%,100%{transform:none;background-color:rgba(248,239,255,0.07);color:#F8EFFF;box-shadow:none}30%,42%{transform:translateY(2px) scale(0.96);background-color:#FFD27A;color:#3a2a08;box-shadow:0 0 16px rgba(255,210,122,0.85)}}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:0.001s !important;animation-iteration-count:1 !important}}
+</style>
+</head>
+<body>
+<div style="font-family:'Noto Sans JP',sans-serif; min-height:100vh; overflow-x:hidden">
+
+  <div style="position:fixed; inset:0; pointer-events:none; z-index:0; mix-blend-mode:screen; opacity:0.85; animation:kfTwinkle 5s ease-in-out infinite; background-image:radial-gradient(1.5px 1.5px at 22px 34px, rgba(255,255,255,0.8), transparent 60%),radial-gradient(1px 1px at 120px 90px, rgba(255,210,122,0.8), transparent 60%),radial-gradient(1.5px 1.5px at 200px 160px, rgba(181,142,255,0.8), transparent 60%),radial-gradient(1px 1px at 280px 50px, rgba(90,233,255,0.7), transparent 60%),radial-gradient(1.5px 1.5px at 330px 210px, rgba(255,122,194,0.7), transparent 60%); background-size:380px 260px"></div>
+
+  <!-- TOPBAR -->
+  <div style="position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:16px; height:52px; padding:0 22px; background:rgba(24,12,46,0.82); backdrop-filter:blur(8px); border-bottom:1px solid rgba(255,210,122,0.18)">
+    <div style="display:flex; align-items:center; gap:10px">
+      <span style="color:#FFD27A; font-size:14px">✦</span>
+      <span style="display:inline-block; padding-right:0.35em; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic; font-size:19px; letter-spacing:0.04em; background:linear-gradient(120deg,#FFE9B0,#FFD27A 26%,#FF4FA8 62%,#B58EFF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">BLENDER ROOM</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(181,142,255,0.85)">部屋を、つくろう。</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.25em; color:#FFD27A">LEC 07 / 15</span>
+      <a href="index.html" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:#5AE9FF; text-decoration:none; border:1px solid rgba(90,233,255,0.4); border-radius:7px; padding:6px 12px; background:rgba(90,233,255,0.06)" data-sh="background:rgba(90,233,255,0.16);box-shadow:0 0 10px rgba(90,233,255,0.4)">全15回マップ ▸</a>
+    </div>
+  </div>
+
+  <div style="position:relative; z-index:1; max-width:960px; margin:0 auto; padding:0 26px 80px">
+
+    <!-- HERO -->
+    <div style="padding:64px 0 22px">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#FFD27A">BLENDER_ROOM // LEC_07</span>
+        <span style="height:1px; width:60px; background:linear-gradient(90deg,#FFD27A,transparent)"></span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:rgba(181,142,255,0.9)">有機的モデリング ── ソファ</span>
+      </div>
+      <div style="display:flex; align-items:baseline; gap:18px; margin-top:18px; flex-wrap:wrap">
+        <span style="display:inline-block; padding-right:0.18em; padding-left:0.06em; padding-bottom:0.14em; font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:92px; line-height:1; letter-spacing:-0.03em; background:linear-gradient(120deg,#FFE9B0,#FFD27A 26%,#FF4FA8 62%,#B58EFF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 0 26px rgba(255,79,168,0.35))">07</span>
+        <h1 style="margin:0; font-family:'Noto Sans JP',sans-serif; font-weight:900; font-size:40px; line-height:1.25; letter-spacing:0.02em; background:linear-gradient(110deg,#FFFFFF,#FFD9EE 45%,#CDB4FF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">カクカクを、<br>ふっくらに変える</h1>
+      </div>
+      <p style="margin:16px 0 0; font-size:15px; line-height:2; color:rgba(248,239,255,0.78); letter-spacing:0.06em">ここまでは「硬い家具」。今日からは<strong style="color:#FF7AC2">柔らかい有機的なもの</strong>です。<br>カクカクのローポリを芯にして、<strong style="color:#5AE9FF">ミラー</strong>で半分の手間に、<strong style="color:#FFD27A">細分割</strong>でふっくら丸く。最後はふかふかのソファに。</p>
+
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:18px; margin-top:34px; align-items:stretch">
+        <div style="border:1px solid rgba(255,210,122,0.25); border-radius:14px; padding:24px 26px; background:linear-gradient(180deg,rgba(255,122,194,0.07),rgba(181,142,255,0.04))">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#FFD27A">TODAY'S GOAL ── 今日のゴール</div>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px">
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#FF7AC2; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#F8EFFF"><strong style="color:#5AE9FF">ミラー</strong>で「半分だけ作れば、もう半分は鏡うつし」を体感する</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#FF7AC2; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#F8EFFF"><strong style="color:#FFD27A">細分割サーフェス</strong>で、カクカクの箱を<strong style="color:#FFD27A">ふっくら丸く</strong>育てる</span>
+            </div>
+          </div>
+          <div style="margin-top:20px; padding-top:16px; border-top:1px dashed rgba(181,142,255,0.3); font-size:13px; line-height:2; color:rgba(248,239,255,0.66); letter-spacing:0.04em"><strong style="color:#FFD27A">合言葉は「足し算」。</strong>モディファイアは元の形を壊さず上に重ねるだけ。何度でもやり直せます。</div>
+        </div>
+        <div style="border:1px solid rgba(181,142,255,0.3); border-radius:14px; padding:20px 22px 16px; background:rgba(13,6,32,0.45); display:flex; flex-direction:column">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#5AE9FF">本日の成果物</div>
+          <div style="position:relative; flex:1; min-height:190px; display:flex; align-items:center; justify-content:center; padding:8px 0 14px">
+            <div style="position:relative; width:188px; height:118px">
+              <!-- mirror center line -->
+              <span style="position:absolute; left:50%; top:-2px; width:0; height:122px; border-left:1px dashed rgba(90,233,255,0.7); transform:translateX(-0.5px); animation:kfH7Line 8s ease-in-out infinite"></span>
+              <!-- LEFT half (static) -->
+              <div style="position:absolute; left:0; top:0; width:94px; height:118px">
+                <!-- backrest -->
+                <div style="position:absolute; left:10px; right:0; top:8px; height:46px; background:rgba(255,122,194,0.24); border:2px solid #FF7AC2; border-right:none; animation:kfH7Round 8s ease-in-out infinite"></div>
+                <!-- seat base -->
+                <div style="position:absolute; left:10px; right:0; bottom:18px; height:34px; background:rgba(181,142,255,0.22); border:2px solid #B58EFF; border-right:none; animation:kfH7RoundSm 8s ease-in-out infinite"></div>
+                <!-- arm -->
+                <div style="position:absolute; left:0; bottom:18px; width:20px; height:74px; background:rgba(255,210,143,0.26); border:2px solid #FFD27A; border-right:none; animation:kfH7Round 8s ease-in-out infinite"></div>
+                <!-- leg -->
+                <span style="position:absolute; left:14px; bottom:4px; width:8px; height:14px; background:rgba(181,142,255,0.5); border-radius:2px"></span>
+              </div>
+              <!-- RIGHT half (mirrored in) -->
+              <div style="position:absolute; right:0; top:0; width:94px; height:118px; transform-origin:left center; animation:kfH7Mir 8s ease-in-out infinite">
+                <div style="position:absolute; right:10px; left:0; top:8px; height:46px; background:rgba(255,122,194,0.24); border:2px solid #FF7AC2; border-left:none; animation:kfH7Round 8s ease-in-out infinite"></div>
+                <div style="position:absolute; right:10px; left:0; bottom:18px; height:34px; background:rgba(181,142,255,0.22); border:2px solid #B58EFF; border-left:none; animation:kfH7RoundSm 8s ease-in-out infinite"></div>
+                <div style="position:absolute; right:0; bottom:18px; width:20px; height:74px; background:rgba(255,210,143,0.26); border:2px solid #FFD27A; border-left:none; animation:kfH7Round 8s ease-in-out infinite"></div>
+                <span style="position:absolute; right:14px; bottom:4px; width:8px; height:14px; background:rgba(181,142,255,0.5); border-radius:2px"></span>
+              </div>
+              <span style="position:absolute; left:50%; top:-12px; transform:translateX(-50%); color:#FFD27A; font-size:17px; animation:kfH7Spark 8s linear infinite; text-shadow:0 0 12px rgba(255,210,122,0.9)">✦</span>
+            </div>
+          </div>
+          <div style="font-size:13px; font-weight:700; color:rgba(248,239,255,0.85); text-align:center; letter-spacing:0.06em; line-height:1.8">ふっくら丸い、<br>1〜2人掛けのソファ<br><span style="font-weight:400; font-size:11.5px; color:rgba(181,142,255,0.95)">ミラー＋細分割で柔らかく</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 01 ミラー -->
+    <div data-reveal="1" style="margin-top:64px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#FFD27A; line-height:1">01</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#F8EFFF">半分だけ作る ── ミラー</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(181,142,255,0.9)">MIRROR // 鏡うつしで手間は半分</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(248,239,255,0.7); letter-spacing:0.04em">ソファや顔のように<strong style="color:#FF7AC2">左右対称</strong>のものは、片側だけ作れば反対側は鏡が映してくれます。<strong style="color:#5AE9FF">作業量も、左右のズレも半分以下に。</strong></p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">1</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#F8EFFF">真ん中で半分に切る</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)">箱の<strong style="color:#5AE9FF">中央でループカット → 片側を削除</strong>。残った半分が、これから育てる種です。</div>
+            </div>
+          </div>
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">2</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#F8EFFF"><span style="color:#5AE9FF">ミラーモディファイア</span>を足す</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)">レンチアイコン → <span style="display:inline-flex; align-items:center; justify-content:center; height:24px; padding:0 8px; border:1px solid rgba(181,142,255,0.45); border-bottom:3px solid rgba(181,142,255,0.55); border-radius:6px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; vertical-align:middle">ミラー</span> を追加。瞬間で反対側が出現。<span style="color:rgba(181,142,255,0.95); font-size:12px">片側を直せば、反対も同時に直る。</span></div>
+            </div>
+          </div>
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">3</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#F8EFFF">中央の継ぎ目を「結合(クリップ)」</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)">ミラー設定の<strong style="color:#5AE9FF">クリッピング</strong>をON。中央の頂点が割れず、左右がぴったり閉じます。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- mirror visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(181,142,255,0.3); border-radius:14px; background:#160b30; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:22px 0">
+          <div style="position:relative; width:150px; height:88px">
+            <!-- center mirror line -->
+            <span style="position:absolute; left:50%; top:-4px; height:96px; border-left:1px dashed #5AE9FF; transform:translateX(-0.5px); animation:kfMirLine 8s ease-in-out infinite"></span>
+            <!-- left half source -->
+            <div style="position:absolute; left:5px; top:6px; width:62px; height:76px">
+              <span style="position:absolute; left:0; right:0; top:0; height:34px; background:rgba(255,79,168,0.32); border:2px solid #FF4FA8; border-right:none; border-radius:14px 0 0 0; animation:kfMirSrc 8s ease-in-out infinite"></span>
+              <span style="position:absolute; left:0; right:0; bottom:0; height:30px; background:rgba(255,79,168,0.22); border:2px solid #FF4FA8; border-right:none; border-radius:0 0 0 10px"></span>
+            </div>
+            <!-- right half mirrored -->
+            <div style="position:absolute; right:5px; top:6px; width:62px; height:76px; transform-origin:left center; animation:kfMirIn 8s ease-in-out infinite">
+              <span style="position:absolute; left:0; right:0; top:0; height:34px; background:rgba(255,210,143,0.28); border:2px solid #FFD27A; border-left:none; border-radius:0 14px 0 0"></span>
+              <span style="position:absolute; left:0; right:0; bottom:0; height:30px; background:rgba(255,210,143,0.2); border:2px solid #FFD27A; border-left:none; border-radius:0 0 10px 0"></span>
+            </div>
+            <span style="position:absolute; left:50%; top:30px; transform:translate(-50%,-50%); color:#FFFFFF; font-size:18px; text-shadow:0 0 14px rgba(255,255,255,0.95); animation:kfMirFlash 8s ease-in-out infinite">✦</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:18px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; color:rgba(181,142,255,0.9)">半分 → 全部</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 11px; border:1px solid rgba(90,233,255,0.5); border-bottom:3px solid rgba(90,233,255,0.6); border-radius:6px; background:rgba(90,233,255,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:#5AE9FF">ミラー</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 02 細分割 -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#FFD27A; line-height:1">02</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#F8EFFF">カクカクをふっくらに ── 細分割</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(181,142,255,0.9)">SUBDIV // 面を増やして丸める</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(248,239,255,0.7); letter-spacing:0.04em">細分割サーフェスは、<strong style="color:#FF7AC2">面を細かく割って自動で丸めて</strong>くれる魔法。カクカクの箱が、なめらかな塊に。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div style="border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03))">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FFD27A; margin-bottom:14px">ショートカット ── 一発で適用</div>
+            <div style="display:flex; flex-direction:column; gap:12px">
+              <div style="display:flex; align-items:center; gap:12px; font-size:13.5px; line-height:1.8; color:rgba(248,239,255,0.82)">
+                <span style="display:inline-flex; align-items:center; justify-content:center; min-width:54px; height:30px; padding:0 9px; border:1px solid rgba(90,233,255,0.5); border-bottom:3px solid rgba(90,233,255,0.6); border-radius:6px; background:rgba(90,233,255,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:#5AE9FF; flex-shrink:0">Ctrl+1</span>
+                <span>軽く丸める。<strong style="color:#5AE9FF">作業中はこれ</strong>でサクサク。</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px; font-size:13.5px; line-height:1.8; color:rgba(248,239,255,0.82)">
+                <span style="display:inline-flex; align-items:center; justify-content:center; min-width:54px; height:30px; padding:0 9px; border:1px solid rgba(255,79,168,0.55); border-bottom:3px solid rgba(255,79,168,0.65); border-radius:6px; background:rgba(255,79,168,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:#FF7AC2; flex-shrink:0">Ctrl+2</span>
+                <span>しっかり丸める。<strong style="color:#FF7AC2">仕上げの確認</strong>に。</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px; font-size:13.5px; line-height:1.8; color:rgba(248,239,255,0.82)">
+                <span style="display:inline-flex; align-items:center; justify-content:center; min-width:54px; height:30px; padding:0 9px; border:1px solid rgba(181,142,255,0.45); border-bottom:3px solid rgba(181,142,255,0.55); border-radius:6px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; flex-shrink:0">Ctrl+0</span>
+                <span>解除して元の箱に戻す。</span>
+              </div>
+            </div>
+          </div>
+          <div style="border:1px solid rgba(255,79,168,0.35); border-radius:14px; padding:18px 22px; background:linear-gradient(180deg,rgba(255,79,168,0.08),rgba(255,122,194,0.03)); display:flex; gap:14px; align-items:flex-start">
+            <span style="color:#FF7AC2; font-size:15px; line-height:1.6; flex-shrink:0">✦</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FF7AC2">いちばん大事なコツ</div>
+              <div style="margin-top:6px; font-size:13px; line-height:1.95; color:rgba(248,239,255,0.82)"><strong style="color:#F8EFFF">元の面が少ないほど、丸くなる。</strong>欲張って面を作り込まず、<strong style="color:#5AE9FF">ローポリの箱のまま</strong>かけるのがふっくらの秘訣。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- subdivision visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(181,142,255,0.3); border-radius:14px; background:#160b30; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:22px 0">
+          <div style="position:relative; width:84px; height:84px">
+            <div style="position:absolute; inset:0; background:rgba(255,122,194,0.2); border:2px solid #FF7AC2; animation:kfSubBox 8s ease-in-out infinite; overflow:hidden">
+              <span style="position:absolute; left:33.3%; top:0; bottom:0; border-left:1px solid rgba(90,233,255,0.7); animation:kfSubGrid 8s ease-in-out infinite"></span>
+              <span style="position:absolute; left:66.6%; top:0; bottom:0; border-left:1px solid rgba(90,233,255,0.7); animation:kfSubGrid 8s ease-in-out infinite"></span>
+              <span style="position:absolute; top:33.3%; left:0; right:0; border-top:1px solid rgba(90,233,255,0.7); animation:kfSubGrid 8s ease-in-out infinite"></span>
+              <span style="position:absolute; top:66.6%; left:0; right:0; border-top:1px solid rgba(90,233,255,0.7); animation:kfSubGrid 8s ease-in-out infinite"></span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:18px">
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 9px; border:1px solid rgba(90,233,255,0.5); border-bottom:3px solid rgba(90,233,255,0.6); border-radius:6px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; animation:kfSubK1 8s linear infinite">Ctrl+1</span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:rgba(181,142,255,0.85)">→</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 9px; border:1px solid rgba(255,79,168,0.55); border-bottom:3px solid rgba(255,79,168,0.65); border-radius:6px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; animation:kfSubK2 8s linear infinite">Ctrl+2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 03 ループカット -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#FFD27A; line-height:1">03</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#F8EFFF">ふにゃけ防止 ── 支えのエッジ</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(181,142,255,0.9)">LOOP CUT // 角を残して締める</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(248,239,255,0.7); letter-spacing:0.04em">細分割は<strong style="color:#FF7AC2">何でもかんでも丸めすぎる</strong>のが弱点。残したい角の<strong style="color:#FFD27A">近くにエッジを1本足す</strong>と、そこだけキュッと締まります。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div style="border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03))">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FFD27A; margin-bottom:14px">手順 ── ループカットを足す</div>
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:13px; line-height:1.9; color:rgba(248,239,255,0.8)">
+              <span style="display:inline-flex; align-items:center; justify-content:center; min-width:44px; height:28px; padding:0 9px; border:1px solid rgba(255,210,122,0.5); border-bottom:3px solid rgba(255,210,122,0.6); border-radius:6px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:#FFD27A">Ctrl+R</span>
+              <span style="color:rgba(248,239,255,0.6)">ループカット →</span>
+              <span style="color:rgba(248,239,255,0.6)">角の近くに線を置く →</span>
+              <span style="color:rgba(248,239,255,0.6)">寄せると</span>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#5AE9FF">角がシャープに</span>
+            </div>
+            <div style="margin-top:14px; padding-top:12px; border-top:1px dashed rgba(181,142,255,0.3); font-size:12.5px; line-height:1.9; color:rgba(181,142,255,0.95)">エッジが角に<strong style="color:#5AE9FF">近いほど鋭く</strong>、遠いほど緩やか。座面のフチや肘掛けの角に効かせます。</div>
+          </div>
+          <div style="border:1px solid rgba(90,233,255,0.32); border-radius:14px; padding:18px 22px; background:linear-gradient(180deg,rgba(90,233,255,0.07),rgba(181,142,255,0.03)); display:flex; gap:14px; align-items:flex-start">
+            <span style="color:#5AE9FF; font-size:15px; line-height:1.6; flex-shrink:0">▸</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#5AE9FF">仕上げ</div>
+              <div style="margin-top:6px; font-size:13px; line-height:1.95; color:rgba(248,239,255,0.82)">右クリック →<strong style="color:#F8EFFF">スムーズシェード</strong>で面のカクつきを消すと、完全にふっくら。クッションの完成です。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- loop cut visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(181,142,255,0.3); border-radius:14px; background:#160b30; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:22px 0">
+          <div style="position:relative; width:96px; height:84px; display:flex; align-items:center; justify-content:center">
+            <div style="position:relative; width:84px; height:72px; background:rgba(255,210,143,0.2); border:2px solid #FFD27A; animation:kfLoopBlob 8s ease-in-out infinite; overflow:hidden">
+              <span style="position:absolute; right:18px; top:-4px; bottom:-4px; border-left:2px solid #FF4FA8; box-shadow:0 0 8px rgba(255,79,168,0.8); transform-origin:center; animation:kfLoopLine 8s ease-in-out infinite"></span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:18px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; color:rgba(181,142,255,0.9)">角を締める</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 9px; border:1px solid rgba(255,210,122,0.5); border-bottom:3px solid rgba(255,210,122,0.6); border-radius:6px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; animation:kfLoopK 8s linear infinite">Ctrl+R</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREENSHOT SLOT -->
+    <div data-reveal="1" style="margin-top:48px; border:1px dashed rgba(181,142,255,0.45); border-radius:14px; padding:18px; background:rgba(13,6,32,0.4)">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.3em; color:rgba(181,142,255,0.9); margin-bottom:12px">YOUR SHOT ── ふっくらしたソファのスクショをここへ</div>
+      <image-slot id="lec07-sofa" shape="rounded" radius="10" placeholder="ミラー＋細分割で作ったソファをドラッグ" style="display:block; width:100%; height:300px"></image-slot>
+    </div>
+
+    <!-- SUMMARY -->
+    <div data-reveal="1" style="margin-top:48px; border:1px solid rgba(255,210,122,0.3); border-radius:16px; padding:28px 30px; background:linear-gradient(180deg,rgba(255,122,194,0.08),rgba(90,233,255,0.04)); position:relative; overflow:hidden">
+      <span style="position:absolute; right:18px; top:12px; color:#FFD27A; font-size:18px; animation:kfFloat 4s ease-in-out infinite">✦</span>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#FFD27A">RECAP ── 今日のキー、ぜんぶ</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px">
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(90,233,255,0.5); border-radius:8px; padding:7px 12px; background:rgba(90,233,255,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#5AE9FF">ミラー</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">半分だけ作って鏡うつし</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(255,210,122,0.5); border-radius:8px; padding:7px 12px; background:rgba(255,210,122,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#FFD27A">Ctrl+1·2</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">細分割でふっくら丸く</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(255,79,168,0.5); border-radius:8px; padding:7px 12px; background:rgba(255,79,168,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#FF7AC2">Ctrl+R</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">支えのエッジで角を締める</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(181,142,255,0.35); border-radius:8px; padding:7px 12px; background:rgba(248,239,255,0.05); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#FFD27A">コツ</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">面は少なく＝より丸く</span></span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:24px; padding-top:18px; border-top:1px dashed rgba(181,142,255,0.3)">
+        <div style="flex:1; min-width:0; font-size:13px; line-height:1.9; color:rgba(248,239,255,0.75)">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#5AE9FF">NEXT ▸ LEC_08</span><br>
+          <strong style="color:#F8EFFF">布シミュレーション① ── 手では作れないリアルなシワや膨らみを、物理におまかせ。空気の詰まったクッションへ。</strong>
+        </div>
+        <div style="display:flex; gap:10px">
+          <a href="06.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#5AE9FF; text-decoration:none; border:1px solid rgba(90,233,255,0.4); border-radius:9px; padding:12px 18px; background:rgba(90,233,255,0.06)" data-sh="background:rgba(90,233,255,0.15)">◂ 第6回</a>
+          <a href="08.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#22103d; text-decoration:none; border-radius:9px; padding:12px 20px; background:linear-gradient(135deg,#FF4FA8,#B850FF); font-weight:600; box-shadow:0 0 18px rgba(255,79,168,0.4)" data-sh="box-shadow:0 0 28px rgba(255,79,168,0.65)">第8回へ ▸</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:48px; display:flex; align-items:center; justify-content:center; gap:12px; opacity:0.65">
+      <img src="assets/blender_logo.png" alt="Blender" style="height:22px; filter:drop-shadow(0 0 6px rgba(255,255,255,0.2))">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(181,142,255,0.8)">BLENDER ROOM // アニメ美術のためのBlender入門 · 全15回</span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  document.querySelectorAll('[data-sh]').forEach(function(el){
+    var b=el.getAttribute('style')||'';
+    el.addEventListener('mouseenter',function(){el.style.cssText=b+';'+el.getAttribute('data-sh');});
+    el.addEventListener('mouseleave',function(){el.style.cssText=b;});
+  });
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target);}
+    });
+  },{threshold:0.06});
+  document.querySelectorAll('[data-reveal]').forEach(function(el){
+    var r=el.getBoundingClientRect();
+    if(r.top<window.innerHeight*0.92)return;
+    el.style.opacity='0';el.style.transform='translateY(18px)';
+    el.style.transition='opacity 0.7s ease,transform 0.7s cubic-bezier(0.22,1,0.36,1)';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>

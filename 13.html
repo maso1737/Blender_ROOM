@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLENDER ROOM // LEC_13 – ライティングとアニメ絵作り</title>
+<script src="./image-slot.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700;900&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500;1,700&display=swap" rel="stylesheet">
+<style>
+  html{scrollbar-color:rgba(229,56,143,0.5) rgba(230,222,210,0.6)}
+  body{margin:0;color:#3A2A52;
+    background:
+      radial-gradient(ellipse 70% 50% at 92% -8%, rgba(232,162,58,0.12), transparent 60%),
+      radial-gradient(ellipse 60% 45% at -5% 14%, rgba(229,56,143,0.07), transparent 60%),
+      linear-gradient(180deg,#FBF7F1 0%,#F4EDE2 100%);
+    background-attachment:fixed;}
+  ::selection{background:rgba(229,56,143,0.22)}
+  @keyframes kfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  /* hero: sunbeam sweeps through a window and casts a window-frame shadow on the floor */
+  @keyframes kfBeam{0%,14%{opacity:0;transform:scaleY(0.2)}40%,100%{opacity:1;transform:scaleY(1)}}
+  @keyframes kfWinShadow{0%,38%{opacity:0;transform:skewX(0deg) scaleX(0.3)}60%,100%{opacity:1;transform:skewX(-28deg) scaleX(1)}}
+  @keyframes kfSunGlow{0%,100%{filter:drop-shadow(0 0 6px rgba(232,162,58,0.6))}50%{filter:drop-shadow(0 0 16px rgba(232,162,58,0.95))}}
+  @keyframes kfHeroSpark{0%,70%{opacity:0;transform:scale(0.3)}78%,92%{opacity:1;transform:scale(1)}100%{opacity:0}}
+  /* section emission: bulb switches on */
+  @keyframes kfBulbOn{0%,24%{background:rgba(110,84,181,0.12);box-shadow:none;border-color:rgba(110,84,181,0.4)}40%,100%{background:radial-gradient(circle at 50% 40%,#FFE6A8,#F0B24E);box-shadow:0 0 26px rgba(240,178,78,0.85);border-color:#E8A23A}}
+  @keyframes kfRay{0%,30%{opacity:0;transform:scaleX(0.2)}48%,100%{opacity:0.9;transform:scaleX(1)}}
+  /* section sun: a sun arcs and its ray rotates through the window */
+  @keyframes kfSunArc{0%,12%{transform:rotate(-34deg)}50%{transform:rotate(-10deg)}88%,100%{transform:rotate(-34deg)}}
+  @keyframes kfBeamSweep{0%,12%{transform:rotate(-34deg);opacity:0.5}50%{transform:rotate(-10deg);opacity:1}88%,100%{transform:rotate(-34deg);opacity:0.5}}
+  /* section angle: shadow edge goes from hard to soft */
+  @keyframes kfHardSoft{0%,42%{filter:blur(0px);opacity:1}54%,96%{filter:blur(5px);opacity:0.7}100%{filter:blur(0px);opacity:1}}
+  @keyframes kfLabelHard{0%,42%{opacity:1}54%,100%{opacity:0.3}}
+  @keyframes kfLabelSoft{0%,42%{opacity:0.3}54%,96%{opacity:1}100%{opacity:0.3}}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:0.001s !important;animation-iteration-count:1 !important}}
+</style>
+</head>
+<body>
+<div style="font-family:'Noto Sans JP',sans-serif; min-height:100vh; overflow-x:hidden">
+
+  <!-- graph-paper grid overlay (sketchbook) -->
+  <div style="position:fixed; inset:0; pointer-events:none; z-index:0; background-image:linear-gradient(rgba(110,84,181,0.06) 1px, transparent 1px),linear-gradient(90deg, rgba(110,84,181,0.06) 1px, transparent 1px); background-size:28px 28px"></div>
+
+  <!-- TOPBAR -->
+  <div style="position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:16px; height:52px; padding:0 22px; background:rgba(251,247,241,0.86); backdrop-filter:blur(8px); border-bottom:1px solid rgba(199,137,43,0.28)">
+    <div style="display:flex; align-items:center; gap:10px">
+      <span style="color:#C7892B; font-size:14px">✦</span>
+      <span style="display:inline-block; padding-right:0.35em; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic; font-size:19px; letter-spacing:0.04em; background:linear-gradient(120deg,#E8A23A,#E5388F 52%,#6E54B5 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">BLENDER ROOM</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(110,84,181,0.85)">部屋を、つくろう。</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.26em; color:#C7892B; border:1px solid rgba(199,137,43,0.4); border-radius:7px; padding:4px 8px; background:rgba(199,137,43,0.07)">PAPER MODE ── 画用紙</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.25em; color:#C7892B">LEC 13 / 15</span>
+      <a href="index.html" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:#0C9BC2; text-decoration:none; border:1px solid rgba(12,155,194,0.4); border-radius:7px; padding:6px 12px; background:rgba(12,155,194,0.06)" data-sh="background:rgba(12,155,194,0.14);box-shadow:0 0 10px rgba(12,155,194,0.25)">全15回マップ ▸</a>
+    </div>
+  </div>
+
+  <div style="position:relative; z-index:1; max-width:960px; margin:0 auto; padding:0 26px 80px">
+
+    <!-- HERO -->
+    <div style="padding:64px 0 22px">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#C7892B">BLENDER_ROOM // LEC_13</span>
+        <span style="height:1px; width:60px; background:linear-gradient(90deg,#C7892B,transparent)"></span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:rgba(110,84,181,0.95)">LIGHTING ── 光と影で時間を描く</span>
+      </div>
+      <div style="display:flex; align-items:baseline; gap:18px; margin-top:18px; flex-wrap:wrap">
+        <span style="display:inline-block; padding-right:0.18em; padding-left:0.06em; padding-bottom:0.14em; font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:92px; line-height:1; letter-spacing:-0.03em; background:linear-gradient(120deg,#E8A23A,#E5388F 52%,#6E54B5 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 2px 6px rgba(229,56,143,0.18))">13</span>
+        <h1 style="margin:0; font-family:'Noto Sans JP',sans-serif; font-weight:900; font-size:40px; line-height:1.25; letter-spacing:0.02em; color:#2A1A40">部屋に、<br>朝日を差し込ませる</h1>
+      </div>
+      <p style="margin:16px 0 0; font-size:15px; line-height:2; color:rgba(58,42,82,0.82); letter-spacing:0.06em">モデルも色もできた部屋に、いよいよ<strong style="color:#C7892B">光</strong>を入れます。光は「形」ではなく<strong style="color:#E5388F">時間帯と空気感</strong>を描く道具。<br>窓から斜めに差す太陽、床に落ちる窓枠の影——その一手で、ただの3D空間が「あの時間の、あの部屋」になります。</p>
+
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:18px; margin-top:34px; align-items:stretch">
+        <div style="border:1px solid rgba(199,137,43,0.3); border-radius:14px; padding:24px 26px; background:#FFFFFF; box-shadow:0 8px 26px rgba(110,84,181,0.07)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#C7892B">TODAY'S GOAL ── 今日のゴール</div>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px">
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#E5388F; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#2A1A40">3D空間に光と影を入れ、<strong style="color:#E5388F">「時間帯」と「空気感」</strong>を演出する</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#E5388F; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#2A1A40"><strong style="color:#C7892B">サン(太陽光)</strong>と<strong style="color:#C7892B">放射マテリアル</strong>を使い分け、影をアニメらしく整える</span>
+            </div>
+          </div>
+          <div style="margin-top:20px; padding-top:16px; border-top:1px dashed rgba(110,84,181,0.3); font-size:13px; line-height:2; color:rgba(58,42,82,0.7); letter-spacing:0.04em"><strong style="color:#C7892B">この回はEEVEEで進めます。</strong>レンダープロパティで <strong style="color:#0C9BC2">レンダーエンジン=EEVEE</strong>、影が出ないときは <strong style="color:#E5388F">「影(Shadows)」</strong> のチェックを確認。</div>
+        </div>
+        <div style="border:1px solid rgba(110,84,181,0.25); border-radius:14px; padding:20px 22px 16px; background:#FFFFFF; box-shadow:0 8px 26px rgba(110,84,181,0.07); display:flex; flex-direction:column">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#0C9BC2">本日の成果物</div>
+          <div style="position:relative; flex:1; min-height:190px; display:flex; align-items:center; justify-content:center; padding:8px 0 14px">
+            <div style="position:relative; width:188px; height:160px; overflow:hidden; border-radius:6px">
+              <!-- room walls -->
+              <div style="position:absolute; inset:0; background:linear-gradient(180deg,#F1E8D8 0%,#E9DECB 62%,#E0D2BC 62%,#D8C9B0 100%)"></div>
+              <!-- window frame on left wall -->
+              <div style="position:absolute; left:18px; top:24px; width:54px; height:64px; background:linear-gradient(160deg,#FFF4D6,#FFE2A0); border:3px solid #C7892B; border-radius:3px">
+                <span style="position:absolute; left:50%; top:0; bottom:0; width:3px; background:#C7892B; transform:translateX(-50%)"></span>
+                <span style="position:absolute; top:50%; left:0; right:0; height:3px; background:#C7892B; transform:translateY(-50%)"></span>
+              </div>
+              <!-- sunbeam -->
+              <div style="position:absolute; left:24px; top:30px; width:120px; height:120px; transform-origin:top left; background:linear-gradient(135deg,rgba(255,226,150,0.7),rgba(255,226,150,0) 70%); transform:rotate(8deg); animation:kfBeam 8s ease-in-out infinite"></div>
+              <!-- window-frame shadow on floor -->
+              <div style="position:absolute; left:70px; bottom:14px; width:64px; height:34px; transform-origin:left center; animation:kfWinShadow 8s ease-in-out infinite">
+                <div style="position:absolute; inset:0; background:rgba(110,84,181,0.22); border-radius:2px"></div>
+                <span style="position:absolute; left:50%; top:0; bottom:0; width:3px; background:#E9DECB; transform:translateX(-50%)"></span>
+                <span style="position:absolute; top:50%; left:0; right:0; height:3px; background:#E9DECB; transform:translateY(-50%)"></span>
+              </div>
+              <!-- sun glyph -->
+              <span style="position:absolute; right:14px; top:12px; font-size:22px; animation:kfSunGlow 3s ease-in-out infinite">☀</span>
+              <span style="position:absolute; left:90px; top:8px; color:#E5388F; font-size:15px; animation:kfHeroSpark 8s linear infinite; text-shadow:0 0 10px rgba(229,56,143,0.6)">✦</span>
+            </div>
+          </div>
+          <div style="font-size:13px; font-weight:700; color:rgba(58,42,82,0.85); text-align:center; letter-spacing:0.06em; line-height:1.8">窓枠の影が床に落ちる<br>ドラマチックな部屋の絵<br><span style="font-weight:400; font-size:11.5px; color:rgba(110,84,181,0.95)">無機質な3D → 時間のある部屋</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 01 EEVEE -->
+    <div data-reveal="1" style="margin-top:64px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">01</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">まず確認:エンジンはEEVEE</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">ENGINE // 速くて絵作り向き</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(58,42,82,0.78); letter-spacing:0.04em">アニメ背景は処理が速い<strong style="color:#0C9BC2">EEVEE</strong>が定番。光の調整を何度も試すので、待たされないことが正義です。表示は <span style="font-family:'IBM Plex Mono',monospace; color:#E5388F">Z ▸ レンダー(Rendered)</span> で本番に近い絵を見ながら進めます。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px">
+        <div style="border:1px solid rgba(12,155,194,0.3); border-radius:14px; padding:22px 24px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#0C9BC2">CHECK 1 ── エンジン</div>
+          <div style="margin-top:12px; font-size:14px; line-height:2; color:rgba(58,42,82,0.82)">レンダープロパティ(カメラ裏アイコン)を開き、<strong style="color:#0C9BC2">レンダーエンジン = EEVEE</strong> になっているか確認。</div>
+        </div>
+        <div style="border:1px solid rgba(229,56,143,0.3); border-radius:14px; padding:22px 24px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#E5388F">CHECK 2 ── 影が出ない?</div>
+          <div style="margin-top:12px; font-size:14px; line-height:2; color:rgba(58,42,82,0.82)">同じプロパティ内の <strong style="color:#E5388F">「影(Shadows)」</strong> にチェックが入っているかを確認。これがOFFだと影は落ちません。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 02 エミッション -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">02</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">モデルを「電球」にする ── 放射</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">EMISSION // 自発光マテリアル</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(58,42,82,0.78); letter-spacing:0.04em">ライトを置かなくても、モデルそのものを<strong style="color:#C7892B">「光るマテリアル」</strong>に変えられます。シーリングライトの電球や、液晶画面の「自発光」はこれが便利。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(199,137,43,0.26); border-radius:14px; padding:20px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#C7892B; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#E5388F">1</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#2A1A40">電球パーツを選んでマテリアルを開く</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(58,42,82,0.78)">シーリングライトやデスクランプの<strong style="color:#2A1A40">電球部分</strong>を選択 → マテリアルプロパティ(地球儀アイコン)を開く。</div>
+            </div>
+          </div>
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(199,137,43,0.26); border-radius:14px; padding:20px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#C7892B; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#E5388F">2</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#2A1A40">放射(Emission)の色と強さを上げる</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(58,42,82,0.78)">ベースカラーの下の <strong style="color:#C7892B">「放射(Emission)」</strong> カラーを電球色(薄いオレンジ〜黄)に。<strong style="color:#E5388F">放射の強さ</strong> を <span style="font-family:'IBM Plex Mono',monospace; color:#E5388F">5.0</span>〜<span style="font-family:'IBM Plex Mono',monospace; color:#E5388F">10.0</span> へ。</div>
+            </div>
+          </div>
+          <div style="border:1px solid rgba(12,155,194,0.3); border-radius:14px; padding:18px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); display:flex; gap:14px; align-items:flex-start">
+            <span style="color:#0C9BC2; font-size:15px; line-height:1.6; flex-shrink:0">▸</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#0C9BC2">確認のコツ</div>
+              <div style="margin-top:6px; font-size:13px; line-height:1.95; color:rgba(58,42,82,0.82)">表示を <span style="font-family:'IBM Plex Mono',monospace; color:#E5388F">Z ▸ レンダー</span> に切り替えると、電球が自発光しているのが分かります。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- emission visual: bulb switches on -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(110,84,181,0.25); border-radius:14px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 0">
+          <div style="position:relative; width:120px; height:96px; display:flex; align-items:center; justify-content:center">
+            <!-- rays -->
+            <span style="position:absolute; left:50%; top:34px; width:64px; height:2px; background:linear-gradient(90deg,#F0B24E,transparent); transform-origin:left; transform:translate(0,0) rotate(0deg); animation:kfRay 8s ease-in-out infinite"></span>
+            <span style="position:absolute; left:50%; top:34px; width:64px; height:2px; background:linear-gradient(90deg,#F0B24E,transparent); transform-origin:left; transform:rotate(60deg); animation:kfRay 8s ease-in-out infinite 0.1s"></span>
+            <span style="position:absolute; left:50%; top:34px; width:64px; height:2px; background:linear-gradient(90deg,#F0B24E,transparent); transform-origin:left; transform:rotate(120deg); animation:kfRay 8s ease-in-out infinite 0.2s"></span>
+            <span style="position:absolute; left:50%; top:34px; width:64px; height:2px; background:linear-gradient(90deg,#F0B24E,transparent); transform-origin:left; transform:rotate(180deg); animation:kfRay 8s ease-in-out infinite 0.3s"></span>
+            <span style="position:absolute; left:50%; top:34px; width:64px; height:2px; background:linear-gradient(90deg,#F0B24E,transparent); transform-origin:left; transform:rotate(240deg); animation:kfRay 8s ease-in-out infinite 0.4s"></span>
+            <span style="position:absolute; left:50%; top:34px; width:64px; height:2px; background:linear-gradient(90deg,#F0B24E,transparent); transform-origin:left; transform:rotate(300deg); animation:kfRay 8s ease-in-out infinite 0.5s"></span>
+            <!-- bulb -->
+            <div style="position:relative; width:42px; height:42px; border-radius:50%; border:2px solid rgba(110,84,181,0.4); animation:kfBulbOn 8s ease-in-out infinite"></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:14px">
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 11px; border:1px solid rgba(199,137,43,0.5); border-radius:6px; background:rgba(199,137,43,0.07); font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; color:#C7892B">Emission ▸ 強さ 5.0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 03 サン -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">03</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">主役の光 ── サン(太陽)を置く</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">SUN // 大事なのは「向き」</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(58,42,82,0.78); letter-spacing:0.04em">アニメ背景で最も映える「窓から差し込む光」を作ります。サンライトは<strong style="color:#E5388F">位置はどこでもよく、「向き(角度)」だけ</strong>が効く特殊なライトです。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(199,137,43,0.26); border-radius:14px; padding:20px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#C7892B; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#E5388F">1</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#2A1A40">サンライトを追加する</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(58,42,82,0.78)">オブジェクトモードで <span style="display:inline-flex; align-items:center; justify-content:center; height:24px; padding:0 8px; border:1px solid rgba(12,155,194,0.5); border-bottom:3px solid rgba(12,155,194,0.6); border-radius:6px; background:#FFFFFF; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#0C9BC2; vertical-align:middle">Shift+A</span> ▸ ライト ▸ <strong style="color:#C7892B">サン(Sun)</strong>。</div>
+            </div>
+          </div>
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(199,137,43,0.26); border-radius:14px; padding:20px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#C7892B; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#E5388F">2</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#2A1A40">光の「向き」を傾ける</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(58,42,82,0.78)"><span style="display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; padding:0 8px; border:1px solid rgba(229,56,143,0.5); border-bottom:3px solid rgba(229,56,143,0.6); border-radius:6px; background:#FFFFFF; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#E5388F; vertical-align:middle">R</span>(回転)で、窓の外から内側・斜め下へ<strong style="color:#C7892B">黄色い線(光の方向)</strong>が伸びるように傾ける。</div>
+            </div>
+          </div>
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(199,137,43,0.26); border-radius:14px; padding:20px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#C7892B; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#E5388F">3</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#2A1A40">色と強さで「時間帯」を決める</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(58,42,82,0.78)">ライトプロパティ(電球アイコン)で強さを <span style="font-family:'IBM Plex Mono',monospace; color:#E5388F">5.0</span> 前後に。色は<strong style="color:#0C9BC2">昼=真っ白</strong>／<strong style="color:#C7892B">夕方=濃いオレンジ</strong>。床に綺麗な窓の影が出るまで角度を微調整。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- sun visual: ray sweeps through window -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(110,84,181,0.25); border-radius:14px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 0">
+          <div style="position:relative; width:130px; height:104px">
+            <!-- sun arcs -->
+            <div style="position:absolute; left:16px; top:14px; transform-origin:50% 60px; animation:kfSunArc 8s ease-in-out infinite">
+              <span style="display:block; font-size:20px; animation:kfSunGlow 3s ease-in-out infinite">☀</span>
+            </div>
+            <!-- ray -->
+            <div style="position:absolute; left:24px; top:22px; width:96px; height:3px; transform-origin:left center; background:linear-gradient(90deg,#F0B24E,rgba(240,178,78,0.1)); animation:kfBeamSweep 8s ease-in-out infinite"></div>
+            <!-- window -->
+            <div style="position:absolute; right:14px; bottom:8px; width:40px; height:48px; border:2px solid #C7892B; border-radius:3px; background:rgba(255,226,150,0.25)">
+              <span style="position:absolute; left:50%; top:0; bottom:0; width:2px; background:#C7892B; transform:translateX(-50%)"></span>
+              <span style="position:absolute; top:50%; left:0; right:0; height:2px; background:#C7892B; transform:translateY(-50%)"></span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:12px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:rgba(110,84,181,0.9)">向きだけが効く</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:26px; padding:0 10px; border:1px solid rgba(229,56,143,0.5); border-radius:6px; background:rgba(229,56,143,0.06); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#E5388F">R で回転</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 04 影の柔らかさ -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">04</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">影を、アニメに馴染ませる</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">SOFTNESS // 角度(Angle)で調整</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(58,42,82,0.78); letter-spacing:0.04em">3D特有のパキッと硬すぎる影は、2Dの背景画に馴染みません。サンライトの <strong style="color:#E5388F">「角度(Angle)」</strong> を上げて、輪郭をフワッとボカします。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="border:1px solid rgba(199,137,43,0.26); border-radius:14px; padding:22px 24px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#C7892B; margin-bottom:14px">PARAM ── 角度(Angle)</div>
+          <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:13px; line-height:1.9; color:rgba(58,42,82,0.85)">
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 11px; border:1px solid rgba(110,84,181,0.4); border-bottom:3px solid rgba(110,84,181,0.5); border-radius:6px; background:#FFFFFF; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#6E54B5">0.5°</span>
+            <span style="color:rgba(58,42,82,0.55)">硬い・くっきり →</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 11px; border:1px solid rgba(229,56,143,0.5); border-bottom:3px solid rgba(229,56,143,0.6); border-radius:6px; background:rgba(229,56,143,0.06); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#E5388F">3.0〜8.0°</span>
+            <span style="color:rgba(58,42,82,0.55)">柔らかい・空気感</span>
+          </div>
+          <div style="margin-top:16px; padding-top:14px; border-top:1px dashed rgba(110,84,181,0.3); font-size:13px; line-height:2; color:rgba(58,42,82,0.78)">数値を上げるほど、<strong style="color:#2A1A40">窓から遠ざかるにつれて影の輪郭がフワッと</strong>優しくボケていきます。上げすぎると締まりがなくなるので、<strong style="color:#E5388F">3〜8°</strong>を目安に。</div>
+        </div>
+
+        <!-- hard -> soft shadow visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(110,84,181,0.25); border-radius:14px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 0">
+          <div style="position:relative; width:120px; height:88px; display:flex; align-items:flex-end; justify-content:center">
+            <!-- object -->
+            <div style="position:absolute; left:38px; bottom:30px; width:24px; height:34px; background:rgba(110,84,181,0.18); border:2px solid #6E54B5; border-radius:3px; z-index:2"></div>
+            <!-- shadow -->
+            <div style="position:absolute; left:60px; bottom:26px; width:50px; height:16px; background:rgba(110,84,181,0.4); border-radius:3px; transform:skewX(-30deg); transform-origin:left; animation:kfHardSoft 8s ease-in-out infinite"></div>
+            <!-- floor line -->
+            <span style="position:absolute; left:8px; right:8px; bottom:24px; height:1.5px; background:rgba(110,84,181,0.25)"></span>
+          </div>
+          <div style="position:relative; height:18px; margin-top:12px; width:100%; text-align:center">
+            <span style="position:absolute; inset:0; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#6E54B5; animation:kfLabelHard 8s ease-in-out infinite">HARD · 0.5°</span>
+            <span style="position:absolute; inset:0; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; color:#E5388F; animation:kfLabelSoft 8s ease-in-out infinite">SOFT · 5.0°</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREENSHOT SLOT -->
+    <div data-reveal="1" style="margin-top:48px; border:1px dashed rgba(110,84,181,0.45); border-radius:14px; padding:18px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.05)">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.3em; color:rgba(110,84,181,0.95); margin-bottom:12px">YOUR SHOT ── 光と影を入れた部屋のレンダー画面をここへ</div>
+      <image-slot id="lec13-light" shape="rounded" radius="10" placeholder="窓から光が差し込み、床に窓枠の影が落ちた部屋の画面をドラッグ" style="display:block; width:100%; height:300px"></image-slot>
+    </div>
+
+    <!-- SUMMARY -->
+    <div data-reveal="1" style="margin-top:48px; border:1px solid rgba(199,137,43,0.32); border-radius:16px; padding:28px 30px; background:linear-gradient(180deg,#FFFFFF,#FBF4EC); box-shadow:0 10px 30px rgba(110,84,181,0.08); position:relative; overflow:hidden">
+      <span style="position:absolute; right:18px; top:12px; color:#C7892B; font-size:18px; animation:kfFloat 4s ease-in-out infinite">✦</span>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#C7892B">RECAP ── 今日のキー、ぜんぶ</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px">
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(12,155,194,0.45); border-radius:8px; padding:7px 12px; background:rgba(12,155,194,0.06); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#0C9BC2">EEVEE</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">速くて絵作り向き</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(199,137,43,0.45); border-radius:8px; padding:7px 12px; background:rgba(199,137,43,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#C7892B">Emission</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">電球を自発光</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(229,56,143,0.45); border-radius:8px; padding:7px 12px; background:rgba(229,56,143,0.06); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#E5388F">サン</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">向きで時間帯</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(229,56,143,0.45); border-radius:8px; padding:7px 12px; background:rgba(229,56,143,0.06); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#E5388F">Angle</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">影の柔らかさ</span></span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:24px; padding-top:18px; border-top:1px dashed rgba(110,84,181,0.3); flex-wrap:wrap">
+        <div style="flex:1; min-width:0; font-size:13px; line-height:1.9; color:rgba(58,42,82,0.78)">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#0C9BC2">NEXT ▸ LEC_14</span><br>
+          <strong style="color:#2A1A40">レンダリングとAOV ── カメラを少し動かして「動く背景」に。プレイブラスト動画と、プロ仕様のマルチパス(EXR)を書き出す。</strong>
+        </div>
+        <div style="display:flex; gap:10px">
+          <a href="12.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#0C9BC2; text-decoration:none; border:1px solid rgba(12,155,194,0.4); border-radius:9px; padding:12px 18px; background:rgba(12,155,194,0.06)" data-sh="background:rgba(12,155,194,0.14)">◂ 第12回</a>
+          <a href="14.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#FFFFFF; text-decoration:none; border-radius:9px; padding:12px 20px; background:linear-gradient(135deg,#E5388F,#7A5CC0); font-weight:600; box-shadow:0 6px 18px rgba(229,56,143,0.3)" data-sh="box-shadow:0 8px 26px rgba(229,56,143,0.5)">第14回へ ▸</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:48px; display:flex; align-items:center; justify-content:center; gap:12px; opacity:0.7">
+      <img src="assets/blender_logo.png" alt="Blender" style="height:22px; filter:drop-shadow(0 1px 3px rgba(110,84,181,0.25))">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(110,84,181,0.8)">BLENDER ROOM // アニメ美術のためのBlender入門 · 全15回</span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  document.querySelectorAll('[data-sh]').forEach(function(el){
+    var b=el.getAttribute('style')||'';
+    el.addEventListener('mouseenter',function(){el.style.cssText=b+';'+el.getAttribute('data-sh');});
+    el.addEventListener('mouseleave',function(){el.style.cssText=b;});
+  });
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target);}
+    });
+  },{threshold:0.06});
+  document.querySelectorAll('[data-reveal]').forEach(function(el){
+    var r=el.getBoundingClientRect();
+    if(r.top<window.innerHeight*0.92)return;
+    el.style.opacity='0';el.style.transform='translateY(18px)';
+    el.style.transition='opacity 0.7s ease,transform 0.7s cubic-bezier(0.22,1,0.36,1)';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>

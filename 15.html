@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLENDER ROOM // LEC_15 – AE撮影(コンポジット)連携と最終講評</title>
+<script src="./image-slot.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700;900&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500;1,700&display=swap" rel="stylesheet">
+<style>
+  html{scrollbar-color:rgba(229,56,143,0.5) rgba(230,222,210,0.6)}
+  body{margin:0;color:#3A2A52;
+    background:
+      radial-gradient(ellipse 70% 50% at 92% -8%, rgba(12,155,194,0.10), transparent 60%),
+      radial-gradient(ellipse 60% 45% at -5% 14%, rgba(229,56,143,0.08), transparent 60%),
+      linear-gradient(180deg,#FBF7F1 0%,#F4EDE2 100%);
+    background-attachment:fixed;}
+  ::selection{background:rgba(229,56,143,0.22)}
+  @keyframes kfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  /* hero: a flat 3D render gains glow + blue atmospheric depth -> 2D art */
+  @keyframes kfBloom{0%,30%{opacity:0;transform:scale(0.5)}48%,100%{opacity:1;transform:scale(1)}}
+  @keyframes kfAirDepth{0%,42%{opacity:0}62%,100%{opacity:0.55}}
+  @keyframes kfHeroSpark{0%,72%{opacity:0;transform:scale(0.3)}80%,93%{opacity:1;transform:scale(1)}100%{opacity:0}}
+  @keyframes kfPlayPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+  /* section 01: EXR enters AE timeline, channels extract out */
+  @keyframes kfExrToTl{0%,10%{opacity:0;transform:translateX(-18px)}28%,100%{opacity:1;transform:translateX(0)}}
+  @keyframes kfChanA{0%,40%{opacity:0;transform:translateY(0)}56%,100%{opacity:1;transform:translateY(-2px)}}
+  @keyframes kfChanB{0%,52%{opacity:0;transform:translateY(0)}68%,100%{opacity:1;transform:translateY(-2px)}}
+  /* section 02 glow: a light source blooms */
+  @keyframes kfGlowBloom{0%,100%{box-shadow:0 0 6px rgba(232,162,58,0.5),0 0 0 rgba(232,162,58,0)}50%{box-shadow:0 0 18px rgba(232,162,58,0.9),0 0 34px rgba(232,162,58,0.5)}}
+  /* section 02 air: back wall tints blue */
+  @keyframes kfAirTint{0%,34%{background:rgba(199,137,43,0.16)}56%,100%{background:rgba(12,155,194,0.28)}}
+  @keyframes kfAirLabel{0%,34%{opacity:0.35}56%,100%{opacity:1}}
+  /* section 03: frames merge into one mp4, screen glows */
+  @keyframes kfMp4Build{0%,20%{opacity:0;transform:scale(0.6)}38%,100%{opacity:1;transform:scale(1)}}
+  @keyframes kfScreenGlow{0%,100%{box-shadow:0 0 0 rgba(229,56,143,0)}50%{box-shadow:0 0 22px rgba(229,56,143,0.45)}}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:0.001s !important;animation-iteration-count:1 !important}}
+</style>
+</head>
+<body>
+<div style="font-family:'Noto Sans JP',sans-serif; min-height:100vh; overflow-x:hidden">
+
+  <!-- graph-paper grid overlay (sketchbook) -->
+  <div style="position:fixed; inset:0; pointer-events:none; z-index:0; background-image:linear-gradient(rgba(110,84,181,0.06) 1px, transparent 1px),linear-gradient(90deg, rgba(110,84,181,0.06) 1px, transparent 1px); background-size:28px 28px"></div>
+
+  <!-- TOPBAR -->
+  <div style="position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:16px; height:52px; padding:0 22px; background:rgba(251,247,241,0.86); backdrop-filter:blur(8px); border-bottom:1px solid rgba(199,137,43,0.28)">
+    <div style="display:flex; align-items:center; gap:10px">
+      <span style="color:#C7892B; font-size:14px">✦</span>
+      <span style="display:inline-block; padding-right:0.35em; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic; font-size:19px; letter-spacing:0.04em; background:linear-gradient(120deg,#E8A23A,#E5388F 52%,#6E54B5 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">BLENDER ROOM</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(110,84,181,0.85)">部屋を、つくろう。</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.26em; color:#E5388F; border:1px solid rgba(229,56,143,0.4); border-radius:7px; padding:4px 8px; background:rgba(229,56,143,0.07)">FINAL ── 最終回</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.25em; color:#C7892B">LEC 15 / 15</span>
+      <a href="index.html" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:#0C9BC2; text-decoration:none; border:1px solid rgba(12,155,194,0.4); border-radius:7px; padding:6px 12px; background:rgba(12,155,194,0.06)" data-sh="background:rgba(12,155,194,0.14);box-shadow:0 0 10px rgba(12,155,194,0.25)">全15回マップ ▸</a>
+    </div>
+  </div>
+
+  <div style="position:relative; z-index:1; max-width:960px; margin:0 auto; padding:0 26px 80px">
+
+    <!-- HERO -->
+    <div style="padding:64px 0 22px">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#C7892B">BLENDER_ROOM // LEC_15</span>
+        <span style="height:1px; width:60px; background:linear-gradient(90deg,#C7892B,transparent)"></span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:rgba(110,84,181,0.95)">COMPOSITE ── 3Dを、絵にする</span>
+      </div>
+      <div style="display:flex; align-items:baseline; gap:18px; margin-top:18px; flex-wrap:wrap">
+        <span style="display:inline-block; padding-right:0.18em; padding-left:0.06em; padding-bottom:0.14em; font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:92px; line-height:1; letter-spacing:-0.03em; background:linear-gradient(120deg,#E8A23A,#E5388F 52%,#6E54B5 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 2px 6px rgba(229,56,143,0.18))">15</span>
+        <h1 style="margin:0; font-family:'Noto Sans JP',sans-serif; font-weight:900; font-size:40px; line-height:1.25; letter-spacing:0.02em; color:#2A1A40">3Dを、<br>「アニメの絵」に仕上げる</h1>
+      </div>
+      <p style="margin:16px 0 0; font-size:15px; line-height:2; color:rgba(58,42,82,0.82); letter-spacing:0.06em">最終回。前回書き出した<strong style="color:#0C9BC2">EXR素材</strong>をAfter Effectsへ運び、<strong style="color:#E5388F">撮影処理</strong>で完全に「二次元のアニメ背景美術」へ昇華させます。<br>3Dの生データに光の滲みと空気の層を足せば、もう立派なアニメのワンカット。15回の、集大成です。</p>
+
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:18px; margin-top:34px; align-items:stretch">
+        <div style="border:1px solid rgba(199,137,43,0.3); border-radius:14px; padding:24px 26px; background:#FFFFFF; box-shadow:0 8px 26px rgba(110,84,181,0.07)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#C7892B">TODAY'S GOAL ── 今日のゴール</div>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px">
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#E5388F; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#2A1A40">EXRをAEに読み込み、<strong style="color:#0C9BC2">影や発光のチャンネル</strong>を取り出す</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#E5388F; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#2A1A40"><strong style="color:#E5388F">グロー</strong>と<strong style="color:#0C9BC2">空気遠近法</strong>で、3D臭さを消して二次元の絵に</span>
+            </div>
+          </div>
+          <div style="margin-top:20px; padding-top:16px; border-top:1px dashed rgba(110,84,181,0.3); font-size:13px; line-height:2; color:rgba(58,42,82,0.7); letter-spacing:0.04em"><strong style="color:#C7892B">「撮影」=仕上げの工程。</strong>アニメ制作でいう撮影さん(コンポジット)の仕事。ここで絵の最終的な空気が決まります。</div>
+        </div>
+        <div style="border:1px solid rgba(110,84,181,0.25); border-radius:14px; padding:20px 22px 16px; background:#FFFFFF; box-shadow:0 8px 26px rgba(110,84,181,0.07); display:flex; flex-direction:column">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#0C9BC2">本日の成果物</div>
+          <div style="position:relative; flex:1; min-height:190px; display:flex; align-items:center; justify-content:center; padding:8px 0">
+            <div style="position:relative; width:180px; height:120px; border-radius:6px; overflow:hidden; border:2px solid rgba(110,84,181,0.3); background:linear-gradient(180deg,#EFE3CE 0%,#E6D7BD 62%,#DCC9A8 62%,#D2BC95 100%)">
+              <!-- back wall with air-perspective blue -->
+              <div style="position:absolute; left:0; top:0; right:0; height:62%; animation:kfAirDepth 8s ease-in-out infinite; background:linear-gradient(180deg,rgba(12,155,194,0.32),rgba(12,155,194,0) 90%)"></div>
+              <!-- window with glow bloom -->
+              <div style="position:absolute; left:20px; top:18px; width:44px; height:50px; border:3px solid #C7892B; border-radius:3px; background:linear-gradient(160deg,#FFF4D6,#FFE2A0); animation:kfBloom 8s ease-in-out infinite">
+                <span style="position:absolute; left:50%; top:0; bottom:0; width:3px; background:#C7892B; transform:translateX(-50%)"></span>
+                <span style="position:absolute; top:50%; left:0; right:0; height:3px; background:#C7892B; transform:translateY(-50%)"></span>
+              </div>
+              <!-- furniture -->
+              <span style="position:absolute; left:96px; bottom:14px; width:30px; height:40px; background:rgba(229,56,143,0.22); border:2px solid #E5388F; border-radius:3px"></span>
+              <span style="position:absolute; left:132px; bottom:14px; width:26px; height:28px; background:rgba(110,84,181,0.2); border:2px solid #6E54B5; border-radius:3px"></span>
+              <!-- play -->
+              <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.85); display:flex; align-items:center; justify-content:center; animation:kfPlayPulse 2.4s ease-in-out infinite; box-shadow:0 2px 10px rgba(110,84,181,0.3)">
+                <span style="width:0; height:0; border-top:7px solid transparent; border-bottom:7px solid transparent; border-left:11px solid #E5388F; margin-left:3px"></span>
+              </div>
+              <span style="position:absolute; right:10px; top:8px; color:#E5388F; font-size:15px; animation:kfHeroSpark 8s linear infinite; text-shadow:0 0 10px rgba(229,56,143,0.6)">✦</span>
+            </div>
+          </div>
+          <div style="font-size:13px; font-weight:700; color:rgba(58,42,82,0.85); text-align:center; letter-spacing:0.06em; line-height:1.8">カメラが動く<br>アニメ背景動画(mp4)<br><span style="font-weight:400; font-size:11.5px; color:rgba(110,84,181,0.95)">15回、全部の集大成</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 01 AEインポート -->
+    <div data-reveal="1" style="margin-top:64px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">01</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">AEに運び、要素を取り出す</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">IMPORT // チャンネル抽出</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(58,42,82,0.78); letter-spacing:0.04em">連番EXRを<strong style="color:#0C9BC2">1本の動画</strong>として読み込み、仕込んでおいた<strong style="color:#E5388F">影・発光</strong>をバラバラのレイヤーに取り出します。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(199,137,43,0.26); border-radius:14px; padding:20px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#C7892B; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#E5388F">1</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#2A1A40">連番画像として読み込む</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(58,42,82,0.78)">プロジェクトパネルをダブルクリック → 最初の <span style="font-family:'IBM Plex Mono',monospace; color:#0C9BC2">0001.exr</span> を選択 → <strong style="color:#E5388F">「OpenEXRシーケンス」</strong>に必ずチェックして読み込み、タイムラインに配置。</div>
+            </div>
+          </div>
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(199,137,43,0.26); border-radius:14px; padding:20px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#C7892B; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#E5388F">2</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#2A1A40">チャンネルを抽出する</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(58,42,82,0.78)">EXR素材に <span style="font-family:'IBM Plex Mono',monospace; color:#0C9BC2">エフェクト ▸ 3Dチャンネル ▸ EXR-IO / Extractor</span> を適用。仕込んだ <strong style="color:#6E54B5">Shadow</strong>・<strong style="color:#C7892B">Emit</strong> を個別レイヤーに分離。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EXR -> timeline -> channels visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(110,84,181,0.25); border-radius:14px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 0">
+          <div style="position:relative; width:140px; height:84px">
+            <!-- exr file -->
+            <div style="position:absolute; left:0; top:24px; width:38px; height:30px; border:2px solid #0C9BC2; border-radius:4px; background:rgba(12,155,194,0.1); display:flex; align-items:center; justify-content:center; animation:kfExrToTl 8s ease-in-out infinite">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:8px; color:#0C9BC2">.exr</span>
+            </div>
+            <span style="position:absolute; left:42px; top:36px; font-family:'IBM Plex Mono',monospace; font-size:13px; color:#C7892B">▸</span>
+            <!-- timeline + extracted channels -->
+            <div style="position:absolute; right:0; top:6px; display:flex; flex-direction:column; gap:5px">
+              <span style="width:74px; height:16px; border:1.5px solid rgba(110,84,181,0.5); border-radius:3px; background:rgba(110,84,181,0.08); font-family:'IBM Plex Mono',monospace; font-size:8px; color:#6E54B5; display:flex; align-items:center; padding-left:6px">RGB</span>
+              <span style="width:74px; height:16px; border:1.5px solid #6E54B5; border-radius:3px; background:rgba(110,84,181,0.14); font-family:'IBM Plex Mono',monospace; font-size:8px; color:#6E54B5; display:flex; align-items:center; padding-left:6px; animation:kfChanA 8s ease-in-out infinite">Shadow</span>
+              <span style="width:74px; height:16px; border:1.5px solid #C7892B; border-radius:3px; background:rgba(199,137,43,0.14); font-family:'IBM Plex Mono',monospace; font-size:8px; color:#C7892B; display:flex; align-items:center; padding-left:6px; animation:kfChanB 8s ease-in-out infinite">Emit</span>
+            </div>
+          </div>
+          <div style="margin-top:14px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:rgba(110,84,181,0.85)">1枚 → 要素ごとに分離</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 02 撮影テクニック -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">02</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">3D臭さを消す、撮影テク</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">COMP // 光の滲み + 空気</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(58,42,82,0.78); letter-spacing:0.04em">ここから一気に画面を「アニメの絵」へ。代表的な2つの撮影テクニックを入れていきます。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px">
+        <!-- technique 1: glow -->
+        <div style="border:1px solid rgba(199,137,43,0.32); border-radius:14px; padding:22px 24px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+          <div style="display:flex; align-items:center; gap:10px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.22em; color:#fff; background:linear-gradient(135deg,#E8A23A,#E5388F); border-radius:5px; padding:3px 9px; font-weight:600">TECH 1</span>
+            <div style="font-size:16px; font-weight:900; color:#2A1A40">光の滲み(グロー)</div>
+          </div>
+          <p style="margin:14px 0 0; font-size:12.5px; line-height:1.95; color:rgba(58,42,82,0.8)">抽出した <strong style="color:#C7892B">Emit(発光)</strong> レイヤーを一番上に重ね、描画モードを <strong style="color:#E5388F">スクリーン/加算</strong> に。<span style="font-family:'IBM Plex Mono',monospace; color:#C7892B">エフェクト ▸ スタイライズ ▸ グロー</span>(またはブラー)をかける。</p>
+          <!-- glow visual -->
+          <div style="margin-top:16px; display:flex; align-items:center; justify-content:center; height:80px; border:1px solid rgba(110,84,181,0.2); border-radius:10px; background:#FBF5EC">
+            <div style="width:34px; height:34px; border-radius:50%; background:radial-gradient(circle at 50% 40%,#FFF0C8,#F0B24E); animation:kfGlowBloom 3s ease-in-out infinite"></div>
+          </div>
+          <div style="margin-top:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:rgba(110,84,181,0.85); text-align:center">窓・電球の周りがフワッと光る</div>
+        </div>
+
+        <!-- technique 2: air perspective -->
+        <div style="border:1px solid rgba(12,155,194,0.32); border-radius:14px; padding:22px 24px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+          <div style="display:flex; align-items:center; gap:10px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.22em; color:#fff; background:linear-gradient(135deg,#0C9BC2,#6E54B5); border-radius:5px; padding:3px 9px; font-weight:600">TECH 2</span>
+            <div style="font-size:16px; font-weight:900; color:#2A1A40">空気遠近法</div>
+          </div>
+          <p style="margin:14px 0 0; font-size:12.5px; line-height:1.95; color:rgba(58,42,82,0.8)"><strong style="color:#0C9BC2">Cryptomatte</strong> で奥の壁・遠くの家具だけをマスク → <span style="font-family:'IBM Plex Mono',monospace; color:#0C9BC2">トーンカーブ</span> でブルーを少し持ち上げ、奥に<strong style="color:#0C9BC2">青み(空気の層)</strong>を足す。</p>
+          <!-- air visual -->
+          <div style="margin-top:16px; position:relative; height:80px; border:1px solid rgba(110,84,181,0.2); border-radius:10px; overflow:hidden; background:#EFE3CE">
+            <div style="position:absolute; left:0; top:0; right:0; height:60%; animation:kfAirTint 8s ease-in-out infinite"></div>
+            <span style="position:absolute; left:18px; bottom:10px; width:22px; height:30px; background:rgba(229,56,143,0.22); border:2px solid #E5388F; border-radius:3px"></span>
+            <span style="position:absolute; right:18px; bottom:10px; width:18px; height:22px; background:rgba(110,84,181,0.2); border:2px solid #6E54B5; border-radius:3px"></span>
+          </div>
+          <div style="margin-top:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.14em; color:rgba(110,84,181,0.85); text-align:center; animation:kfAirLabel 8s ease-in-out infinite">奥が青く=圧倒的な奥行き</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 03 最終書き出し -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">03</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">最終書き出しと、上映</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">EXPORT // mp4 → 講評会</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div style="border:1px solid rgba(229,56,143,0.3); border-radius:14px; padding:20px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#E5388F; margin-bottom:10px">STEP ── 高画質mp4で書き出す</div>
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:13px; line-height:1.9; color:rgba(58,42,82,0.85)">
+              <span style="color:rgba(58,42,82,0.6)">コンポジション ▸</span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 11px; border:1px solid rgba(229,56,143,0.45); border-bottom:3px solid rgba(229,56,143,0.55); border-radius:6px; background:#FFFFFF; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#E5388F">Media Encoder キューに追加</span>
+            </div>
+            <div style="margin-top:12px; font-size:13px; line-height:1.9; color:rgba(58,42,82,0.78)">形式 <strong style="color:#0C9BC2">H.264</strong> ／ プリセット <strong style="color:#C7892B">Match Source - High bitrate</strong>(高画質mp4)を指定して書き出し実行。</div>
+          </div>
+          <div style="border:1px solid rgba(12,155,194,0.3); border-radius:14px; padding:18px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#0C9BC2; margin-bottom:12px">講評チェックポイント</div>
+            <div style="display:flex; flex-direction:column; gap:9px">
+              <div style="display:flex; gap:10px; align-items:flex-start; font-size:12.5px; line-height:1.7; color:rgba(58,42,82,0.82)"><span style="color:#0C9BC2; flex-shrink:0">▸</span><span>間取りに狂いはないか</span></div>
+              <div style="display:flex; gap:10px; align-items:flex-start; font-size:12.5px; line-height:1.7; color:rgba(58,42,82,0.82)"><span style="color:#0C9BC2; flex-shrink:0">▸</span><span>角に綺麗なハイライト(ベベル)が入っているか</span></div>
+              <div style="display:flex; gap:10px; align-items:flex-start; font-size:12.5px; line-height:1.7; color:rgba(58,42,82,0.82)"><span style="color:#0C9BC2; flex-shrink:0">▸</span><span>魅力的な光と影(ライティング・撮影)になっているか</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- screening visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(110,84,181,0.25); border-radius:14px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 0">
+          <div style="position:relative; width:130px; height:84px; border:2px solid #E5388F; border-radius:6px; overflow:hidden; background:linear-gradient(180deg,#EFE3CE 0%,#E6D7BD 60%,#DCC9A8 60%,#D2BC95 100%); animation:kfScreenGlow 3s ease-in-out infinite">
+            <div style="position:absolute; left:0; top:0; right:0; height:60%; background:linear-gradient(180deg,rgba(12,155,194,0.22),transparent)"></div>
+            <span style="position:absolute; left:14px; top:12px; width:26px; height:30px; border:2px solid #C7892B; border-radius:2px; background:rgba(255,226,150,0.4); animation:kfMp4Build 8s ease-in-out infinite"></span>
+            <span style="position:absolute; left:56px; bottom:10px; width:20px; height:26px; background:rgba(229,56,143,0.22); border:2px solid #E5388F; border-radius:2px; animation:kfMp4Build 8s ease-in-out infinite 0.2s"></span>
+            <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.85); display:flex; align-items:center; justify-content:center">
+              <span style="width:0; height:0; border-top:6px solid transparent; border-bottom:6px solid transparent; border-left:9px solid #E5388F; margin-left:2px"></span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:14px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.14em; color:rgba(110,84,181,0.9)">スクリーン上映 →</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:26px; padding:0 10px; border:1px solid rgba(229,56,143,0.5); border-radius:5px; background:rgba(229,56,143,0.06); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#E5388F">mp4</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREENSHOT SLOT -->
+    <div data-reveal="1" style="margin-top:48px; border:1px dashed rgba(110,84,181,0.45); border-radius:14px; padding:18px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.05)">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.3em; color:rgba(110,84,181,0.95); margin-bottom:12px">YOUR FINAL ── 完成したアニメ背景美術の1枚をここへ</div>
+      <image-slot id="lec15-final" shape="rounded" radius="10" placeholder="撮影処理まで仕上げた、あなたのアニメ背景美術をドラッグ" style="display:block; width:100%; height:320px"></image-slot>
+    </div>
+
+    <!-- FINALE / 修了 -->
+    <div data-reveal="1" style="margin-top:48px; border:1px solid rgba(199,137,43,0.4); border-radius:18px; padding:38px 34px; background:linear-gradient(180deg,#FFFFFF,#FBF1E6); box-shadow:0 14px 40px rgba(110,84,181,0.12); position:relative; overflow:hidden; text-align:center">
+      <span style="position:absolute; left:24px; top:18px; color:#E5388F; font-size:15px; animation:kfFloat 4s ease-in-out infinite">✦</span>
+      <span style="position:absolute; right:28px; top:24px; color:#C7892B; font-size:20px; animation:kfFloat 5s ease-in-out infinite">✦</span>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.4em; color:#C7892B">COURSE COMPLETE ── 全15回 修了</div>
+      <div style="margin-top:18px; font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:30px; line-height:1.3; background:linear-gradient(120deg,#E8A23A,#E5388F 52%,#6E54B5 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">15日間、おつかれさまでした。</div>
+      <div style="margin-top:16px; font-size:14px; line-height:2.1; color:rgba(58,42,82,0.8); max-width:580px; margin-left:auto; margin-right:auto; letter-spacing:0.04em">サイコロ1個から始めて、いまあなたの手には<strong style="color:#E5388F">カメラが動くアニメ背景動画</strong>があります。モデリング → 布 → 色 → 光 → 撮影。アニメ美術と同じ全工程を、自分の手で通しきりました。<br><strong style="color:#2A1A40">これであなたも、3D背景を扱える立派なクリエイターの第一歩。</strong></div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:22px">
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(229,56,143,0.45); border-radius:8px; padding:7px 12px; background:rgba(229,56,143,0.06); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#E5388F">OpenEXR</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">シーケンス読み込み</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(199,137,43,0.45); border-radius:8px; padding:7px 12px; background:rgba(199,137,43,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#C7892B">グロー</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">光の滲み</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(12,155,194,0.45); border-radius:8px; padding:7px 12px; background:rgba(12,155,194,0.06); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#0C9BC2">空気遠近法</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">奥行きの青み</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(229,56,143,0.45); border-radius:8px; padding:7px 12px; background:rgba(229,56,143,0.06); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#E5388F">H.264</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">最終mp4</span></span>
+      </div>
+
+      <div style="display:flex; gap:12px; justify-content:center; margin-top:26px; flex-wrap:wrap">
+        <a href="14.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#0C9BC2; text-decoration:none; border:1px solid rgba(12,155,194,0.4); border-radius:9px; padding:13px 20px; background:rgba(12,155,194,0.06)" data-sh="background:rgba(12,155,194,0.14)">◂ 第14回</a>
+        <a href="index.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#FFFFFF; text-decoration:none; border-radius:9px; padding:13px 26px; background:linear-gradient(135deg,#E5388F,#7A5CC0); font-weight:600; box-shadow:0 6px 18px rgba(229,56,143,0.3)" data-sh="box-shadow:0 10px 30px rgba(229,56,143,0.5)">全15回マップに戻る ▸</a>
+      </div>
+    </div>
+
+    <div style="margin-top:48px; display:flex; align-items:center; justify-content:center; gap:12px; opacity:0.7">
+      <img src="assets/blender_logo.png" alt="Blender" style="height:22px; filter:drop-shadow(0 1px 3px rgba(110,84,181,0.25))">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(110,84,181,0.8)">BLENDER ROOM // アニメ美術のためのBlender入門 · 全15回</span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  document.querySelectorAll('[data-sh]').forEach(function(el){
+    var b=el.getAttribute('style')||'';
+    el.addEventListener('mouseenter',function(){el.style.cssText=b+';'+el.getAttribute('data-sh');});
+    el.addEventListener('mouseleave',function(){el.style.cssText=b;});
+  });
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target);}
+    });
+  },{threshold:0.06});
+  document.querySelectorAll('[data-reveal]').forEach(function(el){
+    var r=el.getBoundingClientRect();
+    if(r.top<window.innerHeight*0.92)return;
+    el.style.opacity='0';el.style.transform='translateY(18px)';
+    el.style.transition='opacity 0.7s ease,transform 0.7s cubic-bezier(0.22,1,0.36,1)';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>

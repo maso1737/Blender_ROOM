@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLENDER ROOM // LEC_10 – UV展開とアセット管理</title>
+<script src="./image-slot.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700;900&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500;1,700&display=swap" rel="stylesheet">
+<style>
+  html{scrollbar-color:rgba(229,56,143,0.5) rgba(230,222,210,0.6)}
+  body{margin:0;color:#3A2A52;
+    background:
+      radial-gradient(ellipse 70% 50% at 92% -8%, rgba(110,84,181,0.10), transparent 60%),
+      radial-gradient(ellipse 60% 45% at -5% 14%, rgba(229,56,143,0.08), transparent 60%),
+      linear-gradient(180deg,#FBF7F1 0%,#F4EDE2 100%);
+    background-attachment:fixed;}
+  ::selection{background:rgba(229,56,143,0.22)}
+  @keyframes kfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  /* hero: box unfolds into a flat net (展開図) -> sparkle */
+  @keyframes kfNet1{0%,12%{opacity:0;transform:scale(0.15)}26%,100%{opacity:1;transform:scale(1)}}
+  @keyframes kfNet2{0%,20%{opacity:0;transform:scale(0.15)}34%,100%{opacity:1;transform:scale(1)}}
+  @keyframes kfNet3{0%,28%{opacity:0;transform:scale(0.15)}42%,100%{opacity:1;transform:scale(1)}}
+  @keyframes kfNet4{0%,36%{opacity:0;transform:scale(0.15)}50%,100%{opacity:1;transform:scale(1)}}
+  @keyframes kfNet5{0%,44%{opacity:0;transform:scale(0.15)}58%,100%{opacity:1;transform:scale(1)}}
+  @keyframes kfNetSpark{0%,62%{opacity:0;transform:scale(0.3)}70%,86%{opacity:1;transform:scale(1)}100%{opacity:0}}
+  /* section 02 seam draw -> unwrap checker */
+  @keyframes kfSeam{0%,20%{opacity:0;transform:scaleY(0.05)}38%,100%{opacity:1;transform:scaleY(1)}}
+  @keyframes kfUnwrap{0%,44%{opacity:0;transform:scale(0.4)}60%,100%{opacity:1;transform:scale(1)}}
+  @keyframes kfSeamKey{0%,26%,100%{transform:none;background-color:#FFFFFF;color:#3A2A52;box-shadow:none}32%,42%{transform:translateY(2px) scale(0.96);background-color:#E5388F;color:#FFFFFF;box-shadow:0 0 14px rgba(229,56,143,0.5)}}
+  @keyframes kfUKey{0%,48%,100%{transform:none;background-color:#FFFFFF;color:#3A2A52;box-shadow:none}54%,64%{transform:translateY(2px) scale(0.96);background-color:#0C9BC2;color:#FFFFFF;box-shadow:0 0 14px rgba(12,155,194,0.5)}}
+  /* section 03 turntable */
+  @keyframes kfSpin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+  @keyframes kfRec{0%,100%{opacity:0.4}50%{opacity:1}}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:0.001s !important;animation-iteration-count:1 !important}}
+</style>
+</head>
+<body>
+<div style="font-family:'Noto Sans JP',sans-serif; min-height:100vh; overflow-x:hidden">
+
+  <!-- graph-paper grid overlay (sketchbook) -->
+  <div style="position:fixed; inset:0; pointer-events:none; z-index:0; background-image:linear-gradient(rgba(110,84,181,0.06) 1px, transparent 1px),linear-gradient(90deg, rgba(110,84,181,0.06) 1px, transparent 1px); background-size:28px 28px"></div>
+
+  <!-- TOPBAR -->
+  <div style="position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:16px; height:52px; padding:0 22px; background:rgba(251,247,241,0.86); backdrop-filter:blur(8px); border-bottom:1px solid rgba(199,137,43,0.28)">
+    <div style="display:flex; align-items:center; gap:10px">
+      <span style="color:#C7892B; font-size:14px">✦</span>
+      <span style="display:inline-block; padding-right:0.35em; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic; font-size:19px; letter-spacing:0.04em; background:linear-gradient(120deg,#E8A23A,#E5388F 52%,#6E54B5 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">BLENDER ROOM</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(110,84,181,0.85)">部屋を、つくろう。</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.26em; color:#C7892B; border:1px solid rgba(199,137,43,0.4); border-radius:7px; padding:4px 8px; background:rgba(199,137,43,0.07)">PAPER MODE ── 画用紙</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.25em; color:#C7892B">LEC 10 / 15</span>
+      <a href="index.html" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:#0C9BC2; text-decoration:none; border:1px solid rgba(12,155,194,0.4); border-radius:7px; padding:6px 12px; background:rgba(12,155,194,0.06)" data-sh="background:rgba(12,155,194,0.14);box-shadow:0 0 10px rgba(12,155,194,0.25)">全15回マップ ▸</a>
+    </div>
+  </div>
+
+  <div style="position:relative; z-index:1; max-width:960px; margin:0 auto; padding:0 26px 80px">
+
+    <!-- HERO -->
+    <div style="padding:64px 0 22px">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#C7892B">BLENDER_ROOM // LEC_10</span>
+        <span style="height:1px; width:60px; background:linear-gradient(90deg,#C7892B,transparent)"></span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:rgba(110,84,181,0.95)">TEXTURE ── 色と質感をのせる</span>
+      </div>
+      <div style="display:flex; align-items:baseline; gap:18px; margin-top:18px; flex-wrap:wrap">
+        <span style="display:inline-block; padding-right:0.18em; padding-left:0.06em; padding-bottom:0.14em; font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:92px; line-height:1; letter-spacing:-0.03em; background:linear-gradient(120deg,#E8A23A,#E5388F 52%,#6E54B5 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 2px 6px rgba(229,56,143,0.18))">10</span>
+        <h1 style="margin:0; font-family:'Noto Sans JP',sans-serif; font-weight:900; font-size:40px; line-height:1.25; letter-spacing:0.02em; color:#2A1A40">立体を、平らな<br>画用紙に開く</h1>
+      </div>
+      <p style="margin:16px 0 0; font-size:15px; line-height:2; color:rgba(58,42,82,0.82); letter-spacing:0.06em">ここから章が変わり、<strong style="color:#E5388F">色と質感の世界</strong>へ。2Dスキルの見せ場です。<br>3Dモデルに絵を塗るには、まず面を平らな<strong style="color:#0C9BC2">展開図(=画用紙)</strong>に開く「UV展開」が必要。さらに、納品できるプロのデータ整理術も学びます。</p>
+
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:18px; margin-top:34px; align-items:stretch">
+        <div style="border:1px solid rgba(199,137,43,0.3); border-radius:14px; padding:24px 26px; background:#FFFFFF; box-shadow:0 8px 26px rgba(110,84,181,0.07)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#C7892B">TODAY'S GOAL ── 今日のゴール</div>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px">
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#E5388F; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#2A1A40"><strong style="color:#E5388F">シーム(切れ目)</strong>を入れて、モデルを<strong style="color:#0C9BC2">きれいな展開図</strong>に開く</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#E5388F; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#2A1A40">名前・原点・スケール・コレクションを整える<strong style="color:#C7892B">「納品できるデータ」</strong>の作法</span>
+            </div>
+          </div>
+          <div style="margin-top:20px; padding-top:16px; border-top:1px dashed rgba(110,84,181,0.3); font-size:13px; line-height:2; color:rgba(58,42,82,0.7); letter-spacing:0.04em"><strong style="color:#C7892B">紙の箱を開く感覚。</strong>どこに切れ目を入れるかで、塗りやすさが決まります。歪みの少ない展開図が良い展開図。</div>
+        </div>
+        <div style="border:1px solid rgba(110,84,181,0.25); border-radius:14px; padding:20px 22px 16px; background:#FFFFFF; box-shadow:0 8px 26px rgba(110,84,181,0.07); display:flex; flex-direction:column">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#0C9BC2">本日の成果物</div>
+          <div style="position:relative; flex:1; min-height:190px; display:flex; align-items:center; justify-content:center; padding:8px 0 14px">
+            <div style="position:relative; width:150px; height:150px">
+              <!-- net of a cube (cross) -->
+              <div style="position:absolute; left:53px; top:53px; width:44px; height:44px; background:rgba(229,56,143,0.16); border:2px solid #E5388F; border-radius:3px; transform-origin:center; animation:kfNet1 8s ease-in-out infinite"></div>
+              <div style="position:absolute; left:53px; top:7px; width:44px; height:44px; background:rgba(199,137,43,0.16); border:2px solid #C7892B; border-radius:3px; transform-origin:bottom center; animation:kfNet2 8s ease-in-out infinite"></div>
+              <div style="position:absolute; left:53px; top:99px; width:44px; height:44px; background:rgba(199,137,43,0.16); border:2px solid #C7892B; border-radius:3px; transform-origin:top center; animation:kfNet3 8s ease-in-out infinite"></div>
+              <div style="position:absolute; left:7px; top:53px; width:44px; height:44px; background:rgba(12,155,194,0.14); border:2px solid #0C9BC2; border-radius:3px; transform-origin:right center; animation:kfNet4 8s ease-in-out infinite"></div>
+              <div style="position:absolute; left:99px; top:53px; width:44px; height:44px; background:rgba(12,155,194,0.14); border:2px solid #0C9BC2; border-radius:3px; transform-origin:left center; animation:kfNet5 8s ease-in-out infinite"></div>
+              <span style="position:absolute; left:50%; top:-8px; transform:translateX(-50%); color:#C7892B; font-size:17px; animation:kfNetSpark 8s linear infinite; text-shadow:0 0 10px rgba(199,137,43,0.6)">✦</span>
+            </div>
+          </div>
+          <div style="font-size:13px; font-weight:700; color:rgba(58,42,82,0.85); text-align:center; letter-spacing:0.06em; line-height:1.8">ターンテーブル動画と、<br>整理された納品データ<br><span style="font-weight:400; font-size:11.5px; color:rgba(110,84,181,0.95)">立体 → 平らな展開図</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 01 UVとは -->
+    <div data-reveal="1" style="margin-top:64px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">01</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">UV展開ってなに?</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">UV // 紙の箱を開く</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(58,42,82,0.78); letter-spacing:0.04em">立体のままでは絵を塗れません。お菓子の箱を<strong style="color:#E5388F">ハサミで開いて平らにする</strong>のと同じ。その平らな図が「UV(展開図)」、塗るための画用紙です。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px">
+        <div style="border:1px solid rgba(229,56,143,0.3); border-radius:14px; padding:22px 24px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#E5388F">3D ── 立体のまま</div>
+          <div style="margin-top:12px; font-size:14px; line-height:2; color:rgba(58,42,82,0.82)">面が立体的に曲がっていて、<strong style="color:#2A1A40">絵を「貼る場所」が決められない。</strong>このままでは塗れません。</div>
+        </div>
+        <div style="border:1px solid rgba(12,155,194,0.3); border-radius:14px; padding:22px 24px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#0C9BC2">UV ── 開いて平らに</div>
+          <div style="margin-top:12px; font-size:14px; line-height:2; color:rgba(58,42,82,0.82)">全ての面が<strong style="color:#0C9BC2">2Dの座標</strong>に並ぶ。ここに絵を描けば、立体にピタリと貼り付きます。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 02 シーム→展開 -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">02</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">切れ目を入れて、開く</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">SEAM // どこで切るか</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(58,42,82,0.78); letter-spacing:0.04em">どの辺で切り開くかを<strong style="color:#E5388F">「シーム」</strong>で指定します。目立たない裏側で切るのがコツ。指定したら<strong style="color:#0C9BC2">展開(Unwrap)</strong>するだけ。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div style="border:1px solid rgba(199,137,43,0.26); border-radius:14px; padding:20px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#C7892B; margin-bottom:14px">手順 ── 切って開く</div>
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:13px; line-height:1.9; color:rgba(58,42,82,0.85)">
+              <span style="color:rgba(58,42,82,0.6)">辺を選択 →</span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; min-width:54px; height:28px; padding:0 9px; border:1px solid rgba(229,56,143,0.45); border-bottom:3px solid rgba(229,56,143,0.55); border-radius:6px; background:#FFFFFF; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:#E5388F">Ctrl+E</span>
+              <span style="color:rgba(58,42,82,0.6)">シームをマーク →</span>
+              <span style="color:rgba(58,42,82,0.6)">全選択 →</span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:28px; padding:0 9px; border:1px solid rgba(12,155,194,0.5); border-bottom:3px solid rgba(12,155,194,0.6); border-radius:6px; background:#FFFFFF; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:#0C9BC2">U</span>
+              <span style="color:rgba(58,42,82,0.6)">展開</span>
+            </div>
+            <div style="margin-top:14px; padding-top:12px; border-top:1px dashed rgba(110,84,181,0.3); font-size:12.5px; line-height:1.9; color:rgba(110,84,181,0.95)">UVエディタに展開図が出ます。シームは赤い線で表示されます。</div>
+          </div>
+          <div style="border:1px solid rgba(12,155,194,0.3); border-radius:14px; padding:18px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); display:flex; gap:14px; align-items:flex-start">
+            <span style="color:#0C9BC2; font-size:15px; line-height:1.6; flex-shrink:0">▸</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#0C9BC2">歪みをチェック</div>
+              <div style="margin-top:6px; font-size:13px; line-height:1.95; color:rgba(58,42,82,0.82)"><strong style="color:#2A1A40">チェッカー模様</strong>を貼って確認。マス目が<strong style="color:#E5388F">正方形に近いほど良い展開</strong>。伸びていたらシームを足します。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- seam + checker visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(110,84,181,0.25); border-radius:14px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 0">
+          <div style="position:relative; width:96px; height:80px">
+            <!-- checker (unwrapped result) -->
+            <div style="position:absolute; inset:0; border:2px solid #0C9BC2; border-radius:3px; transform-origin:center; animation:kfUnwrap 8s ease-in-out infinite; background-image:linear-gradient(45deg, rgba(110,84,181,0.16) 25%, transparent 25%, transparent 75%, rgba(110,84,181,0.16) 75%),linear-gradient(45deg, rgba(110,84,181,0.16) 25%, transparent 25%, transparent 75%, rgba(110,84,181,0.16) 75%); background-size:20px 20px; background-position:0 0,10px 10px"></div>
+            <!-- seam line -->
+            <span style="position:absolute; left:-3px; top:-4px; bottom:-4px; border-left:3px solid #E5388F; box-shadow:0 0 8px rgba(229,56,143,0.5); transform-origin:top; animation:kfSeam 8s ease-in-out infinite"></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:18px">
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 9px; border:1px solid rgba(229,56,143,0.45); border-bottom:3px solid rgba(229,56,143,0.55); border-radius:6px; background:#FFFFFF; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; animation:kfSeamKey 8s linear infinite">Ctrl+E</span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:rgba(110,84,181,0.8)">→</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:28px; padding:0 9px; border:1px solid rgba(12,155,194,0.5); border-bottom:3px solid rgba(12,155,194,0.6); border-radius:6px; background:#FFFFFF; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; animation:kfUKey 8s linear infinite">U</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 03 データ整理 -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">03</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">納品できるデータに整える</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">ASSET // プロのお作法</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(58,42,82,0.78); letter-spacing:0.04em">作って終わりではプロ失格。<strong style="color:#E5388F">他人が開いても迷わないデータ</strong>に整えて、ターンテーブル動画を添えて提出します。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="border:1px solid rgba(199,137,43,0.26); border-radius:14px; padding:22px 24px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#C7892B; margin-bottom:16px">CHECKLIST ── 提出前にこれだけ</div>
+          <div style="display:flex; flex-direction:column; gap:0">
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px dashed rgba(110,84,181,0.22)">
+              <span style="flex-shrink:0; width:20px; height:20px; border-radius:4px; background:linear-gradient(135deg,#E8A23A,#E5388F); display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; line-height:1">✓</span>
+              <span style="font-size:13.5px; line-height:1.7; color:rgba(58,42,82,0.85)"><strong style="color:#2A1A40">名前を付ける</strong> ── "Cube.001" のままにしない。"chair_seat" など中身が分かる名前に。</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px dashed rgba(110,84,181,0.22)">
+              <span style="flex-shrink:0; width:20px; height:20px; border-radius:4px; background:linear-gradient(135deg,#E8A23A,#E5388F); display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; line-height:1">✓</span>
+              <span style="font-size:13.5px; line-height:1.7; color:rgba(58,42,82,0.85)"><strong style="color:#2A1A40">原点を整える</strong> ── オブジェクトの原点を底面の中心へ。配置がラクに。</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px dashed rgba(110,84,181,0.22)">
+              <span style="flex-shrink:0; width:20px; height:20px; border-radius:4px; background:linear-gradient(135deg,#E8A23A,#E5388F); display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; line-height:1">✓</span>
+              <span style="font-size:13.5px; line-height:1.7; color:rgba(58,42,82,0.85)"><strong style="color:#2A1A40">スケールを適用</strong> ── <span style="display:inline-flex; align-items:center; justify-content:center; height:22px; padding:0 7px; border:1px solid rgba(12,155,194,0.45); border-bottom:2px solid rgba(12,155,194,0.55); border-radius:5px; background:#FFFFFF; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:600; color:#0C9BC2; vertical-align:middle">Ctrl+A</span> で拡縮を 1.0 に戻す。</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:11px 0">
+              <span style="flex-shrink:0; width:20px; height:20px; border-radius:4px; background:linear-gradient(135deg,#E8A23A,#E5388F); display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; line-height:1">✓</span>
+              <span style="font-size:13.5px; line-height:1.7; color:rgba(58,42,82,0.85)"><strong style="color:#2A1A40">コレクションで分類</strong> ── 家具・小物などフォルダ分けして提出。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- turntable visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(110,84,181,0.25); border-radius:14px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 0">
+          <div style="position:relative; width:120px; height:96px; display:flex; align-items:center; justify-content:center">
+            <!-- spinning ring -->
+            <div style="position:absolute; bottom:18px; width:96px; height:38px; border-radius:50%; border:2px dashed rgba(110,84,181,0.4); animation:kfSpin 8s linear infinite"></div>
+            <!-- platform -->
+            <div style="position:absolute; bottom:24px; width:78px; height:26px; border-radius:50%; background:rgba(12,155,194,0.12); border:2px solid #0C9BC2"></div>
+            <!-- object (chair-ish cube) -->
+            <div style="position:absolute; bottom:34px; width:30px; height:36px; background:rgba(229,56,143,0.16); border:2px solid #E5388F; border-radius:4px"></div>
+            <!-- REC -->
+            <span style="position:absolute; top:2px; left:8px; display:flex; align-items:center; gap:5px; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.18em; color:#E5388F"><span style="width:7px; height:7px; border-radius:50%; background:#E5388F; animation:kfRec 1.4s ease-in-out infinite"></span>REC 360°</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:14px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; color:rgba(110,84,181,0.85)">ターンテーブル</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREENSHOT SLOT -->
+    <div data-reveal="1" style="margin-top:48px; border:1px dashed rgba(110,84,181,0.45); border-radius:14px; padding:18px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.05)">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.3em; color:rgba(110,84,181,0.95); margin-bottom:12px">YOUR SHOT ── UV展開図 or ターンテーブルのスクショをここへ</div>
+      <image-slot id="lec10-uv" shape="rounded" radius="10" placeholder="きれいに開けた展開図、または納品データをドラッグ" style="display:block; width:100%; height:300px"></image-slot>
+    </div>
+
+    <!-- SUMMARY -->
+    <div data-reveal="1" style="margin-top:48px; border:1px solid rgba(199,137,43,0.32); border-radius:16px; padding:28px 30px; background:linear-gradient(180deg,#FFFFFF,#FBF4EC); box-shadow:0 10px 30px rgba(110,84,181,0.08); position:relative; overflow:hidden">
+      <span style="position:absolute; right:18px; top:12px; color:#C7892B; font-size:18px; animation:kfFloat 4s ease-in-out infinite">✦</span>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#C7892B">RECAP ── 今日のキー、ぜんぶ</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px">
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(229,56,143,0.45); border-radius:8px; padding:7px 12px; background:rgba(229,56,143,0.06); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#E5388F">Ctrl+E</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">シームをマーク</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(12,155,194,0.45); border-radius:8px; padding:7px 12px; background:rgba(12,155,194,0.06); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#0C9BC2">U</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">展開(Unwrap)</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(12,155,194,0.45); border-radius:8px; padding:7px 12px; background:rgba(12,155,194,0.06); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#0C9BC2">Ctrl+A</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">スケール適用</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(199,137,43,0.45); border-radius:8px; padding:7px 12px; background:rgba(199,137,43,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#C7892B">整理</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">名前・原点・コレクション</span></span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:24px; padding-top:18px; border-top:1px dashed rgba(110,84,181,0.3); flex-wrap:wrap">
+        <div style="font-size:13px; line-height:1.9; color:rgba(58,42,82,0.78)">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#0C9BC2">NEXT ▸ LEC_11</span><br>
+          <strong style="color:#2A1A40">テクスチャ・外部ツール連携 ── アニメ背景らしいフラットな塗りと、Photoshopとの連携技。</strong>
+        </div>
+        <div style="display:flex; gap:10px">
+          <a href="09.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#0C9BC2; text-decoration:none; border:1px solid rgba(12,155,194,0.4); border-radius:9px; padding:12px 18px; background:rgba(12,155,194,0.06)" data-sh="background:rgba(12,155,194,0.14)">◂ 第9回</a>
+          <a href="11.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#FFFFFF; text-decoration:none; border-radius:9px; padding:12px 20px; background:linear-gradient(135deg,#E5388F,#7A5CC0); font-weight:600; box-shadow:0 6px 18px rgba(229,56,143,0.3)" data-sh="box-shadow:0 8px 26px rgba(229,56,143,0.5)">第11回へ ▸</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:48px; display:flex; align-items:center; justify-content:center; gap:12px; opacity:0.7">
+      <img src="assets/blender_logo.png" alt="Blender" style="height:22px; filter:drop-shadow(0 1px 3px rgba(110,84,181,0.25))">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(110,84,181,0.8)">BLENDER ROOM // アニメ美術のためのBlender入門 · 全15回</span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  document.querySelectorAll('[data-sh]').forEach(function(el){
+    var b=el.getAttribute('style')||'';
+    el.addEventListener('mouseenter',function(){el.style.cssText=b+';'+el.getAttribute('data-sh');});
+    el.addEventListener('mouseleave',function(){el.style.cssText=b;});
+  });
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target);}
+    });
+  },{threshold:0.06});
+  document.querySelectorAll('[data-reveal]').forEach(function(el){
+    var r=el.getBoundingClientRect();
+    if(r.top<window.innerHeight*0.92)return;
+    el.style.opacity='0';el.style.transform='translateY(18px)';
+    el.style.transition='opacity 0.7s ease,transform 0.7s cubic-bezier(0.22,1,0.36,1)';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>

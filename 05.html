@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLENDER ROOM // LEC_05 – タンスとモディファイア</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700;900&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500;1,700&display=swap" rel="stylesheet">
+<style>
+  html{scrollbar-color:rgba(255,79,168,0.6) rgba(20,10,40,0.6)}
+  body{margin:0;color:#F8EFFF;
+    background:
+      radial-gradient(ellipse 80% 55% at 88% -10%, rgba(184,80,255,0.32), transparent 60%),
+      radial-gradient(ellipse 65% 50% at -10% 18%, rgba(255,122,194,0.17), transparent 60%),
+      radial-gradient(ellipse 70% 55% at 50% 115%, rgba(90,233,255,0.14), transparent 65%),
+      linear-gradient(180deg,#2b1852 0%,#190d34 100%);
+    background-attachment:fixed;}
+  ::selection{background:rgba(255,79,168,0.5)}
+  @keyframes kfTwinkle{0%,100%{opacity:0.5}50%{opacity:0.95}}
+  @keyframes kfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  @keyframes kfKeyPress{0%,13%,100%{transform:none;background-color:rgba(248,239,255,0.07);color:#F8EFFF;box-shadow:none}4%,9%{transform:translateY(2px) scale(0.96);background-color:#FF4FA8;color:#22103d;box-shadow:0 0 16px rgba(255,79,168,0.85)}}
+  /* hero: one drawer -> array down -> bevel glint (tansu) */
+  @keyframes kfHeroD0{0%,4%{opacity:0;transform:translateY(-10px) scale(0.92)}14%,100%{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes kfHeroD1{0%,22%{opacity:0;transform:translateY(-10px)}33%,100%{opacity:1;transform:translateY(0)}}
+  @keyframes kfHeroD2{0%,38%{opacity:0;transform:translateY(-10px)}49%,100%{opacity:1;transform:translateY(0)}}
+  @keyframes kfHeroGlint{0%,56%{opacity:0;transform:translate(-26px,-30px) rotate(38deg)}66%{opacity:0.9}82%,100%{opacity:0;transform:translate(26px,34px) rotate(38deg)}}
+  @keyframes kfHeroSpark{0%,76%{opacity:0;transform:scale(0.3)}84%,94%{opacity:1;transform:scale(1)}100%{opacity:0}}
+  @keyframes kfHeroCount{0%,3%{content:"1"}14%,21%{content:"1"}33%,37%{content:"2"}49%,100%{content:"3"}}
+  /* section 02 array */
+  @keyframes kfArr0{0%,3%{opacity:0;transform:translateY(-8px) scale(0.9)}13%,100%{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes kfArr1{0%,24%{opacity:0;transform:translateY(-8px)}36%,100%{opacity:1;transform:translateY(0)}}
+  @keyframes kfArr2{0%,40%{opacity:0;transform:translateY(-8px)}52%,100%{opacity:1;transform:translateY(0)}}
+  @keyframes kfArr3{0%,56%{opacity:0;transform:translateY(-8px)}68%,100%{opacity:1;transform:translateY(0)}}
+  @keyframes kfArrKey{0%,16%,100%{transform:none;background-color:rgba(248,239,255,0.07);color:#F8EFFF;box-shadow:none}20%,28%{transform:translateY(2px) scale(0.96);background-color:#5AE9FF;color:#103040;box-shadow:0 0 16px rgba(90,233,255,0.85)}}
+  /* section 03 bevel */
+  @keyframes kfBevelRound{0%,28%{border-radius:0}54%,100%{border-radius:18px}}
+  @keyframes kfBevelGlint{0%,52%{opacity:0;transform:translate(-22px,-22px)}66%{opacity:1}80%,100%{opacity:0;transform:translate(20px,20px)}}
+  @keyframes kfBevelKey{0%,30%,100%{transform:none;background-color:rgba(248,239,255,0.07);color:#F8EFFF;box-shadow:none}34%,44%{transform:translateY(2px) scale(0.96);background-color:#FFD27A;color:#3a2a08;box-shadow:0 0 16px rgba(255,210,122,0.85)}}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:0.001s !important;animation-iteration-count:1 !important}}
+</style>
+</head>
+<body>
+<div style="font-family:'Noto Sans JP',sans-serif; min-height:100vh; overflow-x:hidden">
+
+  <div style="position:fixed; inset:0; pointer-events:none; z-index:0; mix-blend-mode:screen; opacity:0.85; animation:kfTwinkle 5s ease-in-out infinite; background-image:radial-gradient(1.5px 1.5px at 22px 34px, rgba(255,255,255,0.8), transparent 60%),radial-gradient(1px 1px at 120px 90px, rgba(255,210,122,0.8), transparent 60%),radial-gradient(1.5px 1.5px at 200px 160px, rgba(181,142,255,0.8), transparent 60%),radial-gradient(1px 1px at 280px 50px, rgba(90,233,255,0.7), transparent 60%),radial-gradient(1.5px 1.5px at 330px 210px, rgba(255,122,194,0.7), transparent 60%); background-size:380px 260px"></div>
+
+  <!-- TOPBAR -->
+  <div style="position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:16px; height:52px; padding:0 22px; background:rgba(24,12,46,0.82); backdrop-filter:blur(8px); border-bottom:1px solid rgba(255,210,122,0.18)">
+    <div style="display:flex; align-items:center; gap:10px">
+      <span style="color:#FFD27A; font-size:14px">✦</span>
+      <span style="display:inline-block; padding-right:0.35em; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic; font-size:19px; letter-spacing:0.04em; background:linear-gradient(120deg,#FFE9B0,#FFD27A 26%,#FF4FA8 62%,#B58EFF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">BLENDER ROOM</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(181,142,255,0.85)">部屋を、つくろう。</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.25em; color:#FFD27A">LEC 05 / 15</span>
+      <a href="index.html" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:#5AE9FF; text-decoration:none; border:1px solid rgba(90,233,255,0.4); border-radius:7px; padding:6px 12px; background:rgba(90,233,255,0.06)" data-sh="background:rgba(90,233,255,0.16);box-shadow:0 0 10px rgba(90,233,255,0.4)">全15回マップ ▸</a>
+    </div>
+  </div>
+
+  <div style="position:relative; z-index:1; max-width:960px; margin:0 auto; padding:0 26px 80px">
+
+    <!-- HERO -->
+    <div style="padding:64px 0 22px">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#FFD27A">BLENDER_ROOM // LEC_05</span>
+        <span style="height:1px; width:60px; background:linear-gradient(90deg,#FFD27A,transparent)"></span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:rgba(181,142,255,0.9)">家具モデリング②</span>
+      </div>
+      <div style="display:flex; align-items:baseline; gap:18px; margin-top:18px; flex-wrap:wrap">
+        <span style="display:inline-block; padding-right:0.18em; padding-left:0.06em; padding-bottom:0.14em; font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:92px; line-height:1; letter-spacing:-0.03em; background:linear-gradient(120deg,#FFE9B0,#FFD27A 26%,#FF4FA8 62%,#B58EFF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 0 26px rgba(255,79,168,0.35))">05</span>
+        <h1 style="margin:0; font-family:'Noto Sans JP',sans-serif; font-weight:900; font-size:40px; line-height:1.25; letter-spacing:0.02em; background:linear-gradient(110deg,#FFFFFF,#FFD9EE 45%,#CDB4FF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">タンスの引き出しを、<br>自動で増やす</h1>
+      </div>
+      <p style="margin:16px 0 0; font-size:15px; line-height:2; color:rgba(248,239,255,0.78); letter-spacing:0.06em">引き出しのように規則的に並ぶ形を、ひとつずつコピーするのは時間のムダ。<br><strong style="color:#5AE9FF">モディファイア</strong>という「非破壊の魔法」で、1段から一気に。そして角を<strong style="color:#FF7AC2">ベベル</strong>で丸めて、アニメのハイライトが乗るエッジに仕上げます。</p>
+
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:18px; margin-top:34px; align-items:stretch">
+        <div style="border:1px solid rgba(255,210,122,0.25); border-radius:14px; padding:24px 26px; background:linear-gradient(180deg,rgba(255,122,194,0.07),rgba(181,142,255,0.04))">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#FFD27A">TODAY'S GOAL ── 今日のゴール</div>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px">
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#FF7AC2; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#F8EFFF"><strong style="color:#5AE9FF">配列(Array)モディファイア</strong>で、引き出しを等間隔・好きな数だけ自動で複製する</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#FF7AC2; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#F8EFFF"><strong style="color:#FFD27A">ベベル</strong>で角を丸め、光のハイライトが走るアニメ向きのエッジを作る</span>
+            </div>
+          </div>
+          <div style="margin-top:20px; padding-top:16px; border-top:1px dashed rgba(181,142,255,0.3); font-size:13px; line-height:2; color:rgba(248,239,255,0.66); letter-spacing:0.04em">モディファイアは<strong style="color:#5AE9FF">非破壊</strong>──元の形はそのまま。数も丸みも、あとからスライダーで何度でも変えられます。</div>
+        </div>
+        <div style="border:1px solid rgba(181,142,255,0.3); border-radius:14px; padding:20px 22px 16px; background:rgba(13,6,32,0.45); display:flex; flex-direction:column">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#5AE9FF">本日の成果物</div>
+          <div style="position:relative; flex:1; min-height:190px; display:flex; align-items:center; justify-content:center">
+            <div style="position:relative; width:118px; height:128px">
+              <!-- chest body -->
+              <div style="position:absolute; inset:0; border:2px solid #B58EFF; border-radius:5px; background:linear-gradient(180deg,rgba(181,142,255,0.12),rgba(255,122,194,0.06))"></div>
+              <!-- drawer 0 -->
+              <div style="position:absolute; left:8px; right:8px; top:9px; height:32px; border:2px solid #FF7AC2; background:rgba(255,122,194,0.16); border-radius:4px; display:flex; align-items:center; justify-content:center; animation:kfHeroD0 8s ease-in-out infinite">
+                <span style="width:30px; height:5px; border-radius:3px; background:rgba(255,210,122,0.6); box-shadow:0 0 8px rgba(255,210,122,0.6)"></span>
+              </div>
+              <!-- drawer 1 -->
+              <div style="position:absolute; left:8px; right:8px; top:48px; height:32px; border:2px solid #FF7AC2; background:rgba(255,122,194,0.16); border-radius:4px; display:flex; align-items:center; justify-content:center; animation:kfHeroD1 8s ease-in-out infinite">
+                <span style="width:30px; height:5px; border-radius:3px; background:rgba(255,210,122,0.6); box-shadow:0 0 8px rgba(255,210,122,0.6)"></span>
+              </div>
+              <!-- drawer 2 -->
+              <div style="position:absolute; left:8px; right:8px; top:87px; height:32px; border:2px solid #FF7AC2; background:rgba(255,122,194,0.16); border-radius:4px; display:flex; align-items:center; justify-content:center; animation:kfHeroD2 8s ease-in-out infinite">
+                <span style="width:30px; height:5px; border-radius:3px; background:rgba(255,210,122,0.6); box-shadow:0 0 8px rgba(255,210,122,0.6)"></span>
+              </div>
+              <!-- bevel glint -->
+              <span style="position:absolute; left:50%; top:50%; width:3px; height:150px; margin:-75px 0 0 -1px; background:linear-gradient(180deg,transparent,rgba(255,255,255,0.85),transparent); animation:kfHeroGlint 8s ease-in-out infinite"></span>
+              <span style="position:absolute; right:-14px; top:-14px; color:#FFD27A; font-size:18px; animation:kfHeroSpark 8s linear infinite; text-shadow:0 0 12px rgba(255,210,122,0.9)">✦</span>
+            </div>
+          </div>
+          <div style="font-size:13px; font-weight:700; color:rgba(248,239,255,0.85); text-align:center; letter-spacing:0.06em; line-height:1.8">引き出しが等間隔で並んだ<br>ベベル付きタンス<br><span style="font-weight:400; font-size:11.5px; color:rgba(181,142,255,0.95)">1段だけ作れば、あとは自動</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 01 1段を作る -->
+    <div data-reveal="1" style="margin-top:64px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#FFD27A; line-height:1">01</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#F8EFFF">タンス本体と、引き出し1段を作る</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(181,142,255,0.9)">UNIT // 最初の1個だけ丁寧に</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(248,239,255,0.7); letter-spacing:0.04em">配列は「並べる元」が命。本体に空洞を彫り、<strong style="color:#FF7AC2">1段をきっちり作れば</strong>、残りはコピーされて自動で揃います。</p>
+
+      <div style="display:flex; flex-direction:column; gap:14px; margin-top:24px">
+        <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr auto; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">1</span></div>
+          <div>
+            <div style="font-size:15.5px; font-weight:900; color:#F8EFFF">タンスのベース(箱)を作る</div>
+            <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)"><span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#5AE9FF">Shift+A ▸ 立方体(Cube)</span> → <span style="display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:26px; padding:0 8px; border:1px solid rgba(181,142,255,0.45); border-bottom:3px solid rgba(181,142,255,0.55); border-radius:6px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; vertical-align:middle">S</span> でタンスの外寸(幅・奥行き・高さ)に整える。</div>
+          </div>
+          <span style="display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 11px; border:1px solid rgba(181,142,255,0.45); border-bottom:3px solid rgba(181,142,255,0.55); border-radius:7px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; animation:kfKeyPress 5s linear infinite">S</span>
+        </div>
+
+        <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">2</span></div>
+          <div>
+            <div style="font-size:15.5px; font-weight:900; color:#F8EFFF">前面をくり抜いて空洞を作る</div>
+            <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)">前面を選択 → <span style="display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:26px; padding:0 8px; border:1px solid rgba(181,142,255,0.45); border-bottom:3px solid rgba(181,142,255,0.55); border-radius:6px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; vertical-align:middle">I</span>(インセット)で外枠の厚みを作り、内側の面を <span style="display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:26px; padding:0 8px; border:1px solid rgba(181,142,255,0.45); border-bottom:3px solid rgba(181,142,255,0.55); border-radius:6px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; vertical-align:middle">E</span> で奥へ押し込む。<span style="color:rgba(181,142,255,0.95); font-size:12px">引き出しが収まる空洞に。第4回と同じ手。</span></div>
+          </div>
+        </div>
+
+        <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">3</span></div>
+          <div>
+            <div style="font-size:15.5px; font-weight:900; color:#F8EFFF">引き出しを「1段だけ」完璧に作る</div>
+            <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)">空洞にぴったりハマる引き出しを、取っ手まで含めて1段分モデリング。<span style="color:rgba(181,142,255,0.95); font-size:12px">取っ手ごと「1段のセット」にしておくと、丸ごとコピーされます。</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONCEPT モディファイアって? -->
+    <div data-reveal="1" style="margin-top:40px; border:1px dashed rgba(90,233,255,0.4); border-radius:14px; padding:22px 26px; background:linear-gradient(180deg,rgba(90,233,255,0.07),rgba(181,142,255,0.03)); display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap">
+      <div style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:40px; line-height:1; color:#5AE9FF; flex-shrink:0">?</div>
+      <div style="flex:1; min-width:240px">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:#5AE9FF">MODIFIER ── モディファイアって?</div>
+        <p style="margin:8px 0 0; font-size:13.5px; line-height:2; color:rgba(248,239,255,0.8)">元の形を<strong style="color:#5AE9FF">壊さずに</strong>、上から効果を「重ねがけ」する仕組み。プロパティの<span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFD27A">レンチ 🔧 アイコン</span>から追加します。数を変える・角を丸める・いつでも消す——全部あとから調整自在。レイヤー効果のように、非破壊で何度でもやり直せます。</p>
+      </div>
+    </div>
+
+    <!-- SECTION 02 配列 -->
+    <div data-reveal="1" style="margin-top:64px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#FFD27A; line-height:1">02</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#F8EFFF">配列モディファイアで自動で増やす</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(181,142,255,0.9)">ARRAY // 1段 → 何段でも</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(248,239,255,0.7); letter-spacing:0.04em">数字を入れるだけで、引き出しが<strong style="color:#5AE9FF">等間隔で勝手に並ぶ</strong>。今日の主役です。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">1</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#F8EFFF">配列(Array)を追加する</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)">プロパティの <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFD27A">レンチ 🔧</span> → <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#5AE9FF">モディファイアを追加 ▸ 配列(Array)</span>。いきなり2個に増えます。</div>
+            </div>
+          </div>
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">2</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#F8EFFF">数(Count)を引き出しの段数に</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)"><span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#5AE9FF">数(Count)</span>を <span style="color:#FFD27A; font-weight:700">4</span> にすれば4段。<span style="color:rgba(181,142,255,0.95); font-size:12px">タイプし直すだけで何段にでも。手作業コピーはもう不要。</span></div>
+            </div>
+          </div>
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">3</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#F8EFFF">間隔と向きを整える</div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)"><span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#5AE9FF">係数(Factor)</span>で隙間を、Z方向の値で<strong style="color:#FF7AC2">下に積む</strong>かを調整。タンスは下方向に等間隔で。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- array visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(181,142,255,0.3); border-radius:14px; background:#160b30; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px 0">
+          <div style="position:relative; width:108px; height:172px">
+            <div style="position:absolute; left:0; right:0; top:0; height:38px; border:2px solid #FF7AC2; background:rgba(255,122,194,0.18); border-radius:4px; display:flex; align-items:center; justify-content:center; animation:kfArr0 8s ease-in-out infinite"><span style="width:30px; height:5px; border-radius:3px; background:rgba(255,210,122,0.55)"></span></div>
+            <div style="position:absolute; left:0; right:0; top:45px; height:38px; border:2px solid #FF7AC2; background:rgba(255,122,194,0.18); border-radius:4px; display:flex; align-items:center; justify-content:center; animation:kfArr1 8s ease-in-out infinite"><span style="width:30px; height:5px; border-radius:3px; background:rgba(255,210,122,0.55)"></span></div>
+            <div style="position:absolute; left:0; right:0; top:90px; height:38px; border:2px solid #FF7AC2; background:rgba(255,122,194,0.18); border-radius:4px; display:flex; align-items:center; justify-content:center; animation:kfArr2 8s ease-in-out infinite"><span style="width:30px; height:5px; border-radius:3px; background:rgba(255,210,122,0.55)"></span></div>
+            <div style="position:absolute; left:0; right:0; top:135px; height:38px; border:2px solid #FF7AC2; background:rgba(255,122,194,0.18); border-radius:4px; display:flex; align-items:center; justify-content:center; animation:kfArr3 8s ease-in-out infinite"><span style="width:30px; height:5px; border-radius:3px; background:rgba(255,210,122,0.55)"></span></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:16px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:rgba(181,142,255,0.9)">COUNT</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:28px; padding:0 9px; border:1px solid rgba(90,233,255,0.5); border-bottom:3px solid rgba(90,233,255,0.6); border-radius:6px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; animation:kfArrKey 8s linear infinite">4</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 03 ベベル -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#FFD27A; line-height:1">03</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#F8EFFF">ベベルで角を丸める</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(181,142,255,0.9)">BEVEL // 光が乗るエッジ</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(248,239,255,0.7); letter-spacing:0.04em">ピン角は光を弾きません。ほんの少し丸めると、エッジに沿って<strong style="color:#FFD27A">細いハイライト</strong>が走り、アニメ画面でぐっと立体的に。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:16px">
+          <div style="border:1px solid rgba(255,122,194,0.35); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.08),rgba(181,142,255,0.03))">
+            <div style="display:flex; align-items:center; gap:10px">
+              <span style="display:inline-flex; align-items:center; justify-content:center; height:32px; padding:0 9px; border:1px solid rgba(255,122,194,0.6); border-bottom:3px solid rgba(255,122,194,0.7); border-radius:7px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600">Ctrl+B</span>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FF7AC2">EDIT MODE</div>
+                <div style="font-size:16px; font-weight:900; color:#F8EFFF">手動ベベル ── 狙った角だけ</div>
+              </div>
+            </div>
+            <p style="margin:12px 0 0; font-size:12.5px; line-height:2; color:rgba(248,239,255,0.75)">編集モードで丸めたい辺を選択 → <span style="font-family:'IBM Plex Mono',monospace; color:#FF7AC2">Ctrl+B</span>。マウスで幅、<strong style="color:#5AE9FF">ホイールでセグメント数</strong>(段数)を増やすほど滑らかに。</p>
+          </div>
+          <div style="border:1px solid rgba(255,210,122,0.35); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,210,122,0.07),rgba(181,142,255,0.03))">
+            <div style="display:flex; align-items:center; gap:10px">
+              <span style="display:inline-flex; align-items:center; justify-content:center; height:32px; padding:0 10px; border:1px solid rgba(255,210,122,0.6); border-bottom:3px solid rgba(255,210,122,0.7); border-radius:7px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600">🔧 Bevel</span>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FFD27A">MODIFIER</div>
+                <div style="font-size:16px; font-weight:900; color:#F8EFFF">ベベルモディファイア ── 全体に均一</div>
+              </div>
+            </div>
+            <p style="margin:12px 0 0; font-size:12.5px; line-height:2; color:rgba(248,239,255,0.75)">レンチから<span style="font-family:'IBM Plex Mono',monospace; color:#FFD27A">ベベル</span>を追加すれば、全エッジを一括で。<strong style="color:#5AE9FF">量(Amount)</strong>を後から微調整でき、非破壊。配列モディファイアと<strong style="color:#FF7AC2">重ねがけ</strong>もできます。</p>
+          </div>
+        </div>
+
+        <!-- bevel visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(181,142,255,0.3); border-radius:14px; background:#160b30; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 0">
+          <div style="position:relative; width:96px; height:96px">
+            <div style="position:absolute; inset:0; border:2px solid #FFD27A; background:rgba(255,210,122,0.14); animation:kfBevelRound 8s ease-in-out infinite"></div>
+            <span style="position:absolute; left:50%; top:50%; width:2.5px; height:150px; margin:-75px 0 0 -1px; background:linear-gradient(180deg,transparent,rgba(255,255,255,0.9),transparent); transform:rotate(45deg); transform-origin:center; animation:kfBevelGlint 8s ease-in-out infinite"></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:18px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:rgba(248,239,255,0.5)">SHARP</span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:rgba(248,239,255,0.5)">→</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 9px; border:1px solid rgba(255,210,122,0.5); border-bottom:3px solid rgba(255,210,122,0.6); border-radius:6px; background:rgba(248,239,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; animation:kfBevelKey 8s linear infinite">Ctrl+B</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAUTION スケール -->
+    <div data-reveal="1" style="margin-top:18px; border:1px solid rgba(255,79,168,0.4); border-radius:12px; padding:16px 20px; background:linear-gradient(180deg,rgba(255,79,168,0.09),rgba(255,122,194,0.03)); display:flex; gap:14px; align-items:flex-start">
+      <span style="color:#FF4FA8; font-size:16px; line-height:1.7; flex-shrink:0">⚠</span>
+      <div style="font-size:13px; line-height:2; color:rgba(248,239,255,0.82)"><strong style="color:#FF7AC2">角がガタガタに歪んで削れたら?</strong> ── オブジェクトモードでNパネルの<span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFD27A">スケール</span>が <strong style="color:#5AE9FF">1, 1, 1</strong> か確認。違えば第1回の <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFD27A">Ctrl+A ▸ スケール</span> でリセットすれば直ります。</div>
+    </div>
+
+    <!-- SCREENSHOT SLOT -->
+    <div data-reveal="1" style="margin-top:48px; border:1px dashed rgba(181,142,255,0.45); border-radius:14px; padding:18px; background:rgba(13,6,32,0.4)">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.3em; color:rgba(181,142,255,0.9); margin-bottom:12px">YOUR SHOT ── 完成したタンスのスクショをここへ</div>
+      <image-slot id="lec05-tansu" shape="rounded" radius="10" placeholder="配列＋ベベルで作ったタンスをドラッグ" style="display:block; width:100%; height:300px"></image-slot>
+    </div>
+
+    <!-- SUMMARY -->
+    <div data-reveal="1" style="margin-top:48px; border:1px solid rgba(255,210,122,0.3); border-radius:16px; padding:28px 30px; background:linear-gradient(180deg,rgba(255,122,194,0.08),rgba(90,233,255,0.04)); position:relative; overflow:hidden">
+      <span style="position:absolute; right:18px; top:12px; color:#FFD27A; font-size:18px; animation:kfFloat 4s ease-in-out infinite">✦</span>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#FFD27A">RECAP ── 今日のキー、ぜんぶ</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px">
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(181,142,255,0.35); border-radius:8px; padding:7px 12px; background:rgba(248,239,255,0.05); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#FF7AC2">I</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">インセット(引き出しの面)</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(90,233,255,0.45); border-radius:8px; padding:7px 12px; background:rgba(90,233,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#5AE9FF">配列</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">Array ── 自動複製</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(90,233,255,0.45); border-radius:8px; padding:7px 12px; background:rgba(90,233,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#5AE9FF">Count</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">数 ── 段数を決める</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(255,210,122,0.5); border-radius:8px; padding:7px 12px; background:rgba(255,210,122,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#FFD27A">ベベル</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">Bevel ── 角を丸める</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(255,210,122,0.5); border-radius:8px; padding:7px 12px; background:rgba(255,210,122,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#FFD27A">Ctrl+B</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">手動ベベル</span></span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:24px; padding-top:18px; border-top:1px dashed rgba(181,142,255,0.3); flex-wrap:wrap">
+        <div style="font-size:13px; line-height:1.9; color:rgba(248,239,255,0.75)">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#5AE9FF">NEXT ▸ LEC_06</span><br>
+          <strong style="color:#F8EFFF">家具モデリング③【実習】── ここまでの手数で、机と椅子を自分の手で起こす。</strong>
+        </div>
+        <div style="display:flex; gap:10px">
+          <a href="04.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#5AE9FF; text-decoration:none; border:1px solid rgba(90,233,255,0.4); border-radius:9px; padding:12px 18px; background:rgba(90,233,255,0.06)" data-sh="background:rgba(90,233,255,0.15)">◂ 第4回</a>
+          <a href="06.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#22103d; text-decoration:none; border-radius:9px; padding:12px 20px; background:linear-gradient(135deg,#FF4FA8,#B850FF); font-weight:600; box-shadow:0 0 18px rgba(255,79,168,0.4)" data-sh="box-shadow:0 0 28px rgba(255,79,168,0.65)">第6回へ ▸</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:48px; display:flex; align-items:center; justify-content:center; gap:12px; opacity:0.65">
+      <img src="assets/blender_logo.png" alt="Blender" style="height:22px; filter:drop-shadow(0 0 6px rgba(255,255,255,0.2))">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(181,142,255,0.8)">BLENDER ROOM // アニメ美術のためのBlender入門 · 全15回</span>
+    </div>
+  </div>
+</div>
+<script src="image-slot.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('[data-sh]').forEach(function(el){
+    var b=el.getAttribute('style')||'';
+    el.addEventListener('mouseenter',function(){el.style.cssText=b+';'+el.getAttribute('data-sh');});
+    el.addEventListener('mouseleave',function(){el.style.cssText=b;});
+  });
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target);}
+    });
+  },{threshold:0.06});
+  document.querySelectorAll('[data-reveal]').forEach(function(el){
+    var r=el.getBoundingClientRect();
+    if(r.top<window.innerHeight*0.92)return;
+    el.style.opacity='0';el.style.transform='translateY(18px)';
+    el.style.transition='opacity 0.7s ease,transform 0.7s cubic-bezier(0.22,1,0.36,1)';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>

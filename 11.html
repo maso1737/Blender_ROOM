@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLENDER ROOM // LEC_11 – テクスチャ・外部ツール連携</title>
+<script src="./image-slot.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700;900&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500;1,700&display=swap" rel="stylesheet">
+<style>
+  html{scrollbar-color:rgba(229,56,143,0.5) rgba(230,222,210,0.6)}
+  body{margin:0;color:#3A2A52;
+    background:
+      radial-gradient(ellipse 70% 50% at 92% -8%, rgba(110,84,181,0.10), transparent 60%),
+      radial-gradient(ellipse 60% 45% at -5% 14%, rgba(229,56,143,0.08), transparent 60%),
+      linear-gradient(180deg,#FBF7F1 0%,#F4EDE2 100%);
+    background-attachment:fixed;}
+  ::selection{background:rgba(229,56,143,0.22)}
+  @keyframes kfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  /* hero: a grey chair gets washed with flat colour, then wood grain draws on, then sparkle */
+  @keyframes kfWash{0%,16%{clip-path:inset(0 100% 0 0)}40%,100%{clip-path:inset(0 0 0 0)}}
+  @keyframes kfGrain1{0%,42%{opacity:0;transform:scaleX(0.1)}54%,100%{opacity:1;transform:scaleX(1)}}
+  @keyframes kfGrain2{0%,48%{opacity:0;transform:scaleX(0.1)}60%,100%{opacity:1;transform:scaleX(1)}}
+  @keyframes kfGrain3{0%,54%{opacity:0;transform:scaleX(0.1)}66%,100%{opacity:1;transform:scaleX(1)}}
+  @keyframes kfHeroSpark{0%,70%{opacity:0;transform:scale(0.3)}78%,92%{opacity:1;transform:scale(1)}100%{opacity:0}}
+  /* section 02: brush dabs paint onto a swatch + key press */
+  @keyframes kfDab{0%,18%{opacity:0;transform:scale(0.2)}30%,100%{opacity:1;transform:scale(1)}}
+  @keyframes kfBrush{0%,8%{transform:translate(0,0) rotate(-18deg)}24%{transform:translate(34px,26px) rotate(-18deg)}48%{transform:translate(-6px,4px) rotate(-18deg)}70%,100%{transform:translate(34px,26px) rotate(-18deg)}}
+  @keyframes kfTKey{0%,20%,100%{transform:none;background-color:#FFFFFF;color:#3A2A52;box-shadow:none}26%,40%{transform:translateY(2px) scale(0.96);background-color:#E5388F;color:#FFFFFF;box-shadow:0 0 14px rgba(229,56,143,0.5)}}
+  /* section 03: round-trip Blender <-> Photoshop loop */
+  @keyframes kfTripA{0%,8%{opacity:0.3;transform:translateX(0)}24%,46%{opacity:1;transform:translateX(0)}}
+  @keyframes kfTripB{0%,50%{opacity:0.3}66%,92%{opacity:1}100%{opacity:0.3}}
+  @keyframes kfArrowR{0%,12%{opacity:0.25}28%{opacity:1}44%,100%{opacity:0.25}}
+  @keyframes kfArrowL{0%,56%{opacity:0.25}72%{opacity:1}88%,100%{opacity:0.25}}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:0.001s !important;animation-iteration-count:1 !important}}
+</style>
+</head>
+<body>
+<div style="font-family:'Noto Sans JP',sans-serif; min-height:100vh; overflow-x:hidden">
+
+  <!-- graph-paper grid overlay (sketchbook) -->
+  <div style="position:fixed; inset:0; pointer-events:none; z-index:0; background-image:linear-gradient(rgba(110,84,181,0.06) 1px, transparent 1px),linear-gradient(90deg, rgba(110,84,181,0.06) 1px, transparent 1px); background-size:28px 28px"></div>
+
+  <!-- TOPBAR -->
+  <div style="position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:16px; height:52px; padding:0 22px; background:rgba(251,247,241,0.86); backdrop-filter:blur(8px); border-bottom:1px solid rgba(199,137,43,0.28)">
+    <div style="display:flex; align-items:center; gap:10px">
+      <span style="color:#C7892B; font-size:14px">✦</span>
+      <span style="display:inline-block; padding-right:0.35em; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic; font-size:19px; letter-spacing:0.04em; background:linear-gradient(120deg,#E8A23A,#E5388F 52%,#6E54B5 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">BLENDER ROOM</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(110,84,181,0.85)">部屋を、つくろう。</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.26em; color:#C7892B; border:1px solid rgba(199,137,43,0.4); border-radius:7px; padding:4px 8px; background:rgba(199,137,43,0.07)">PAPER MODE ── 画用紙</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.25em; color:#C7892B">LEC 11 / 15</span>
+      <a href="index.html" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:#0C9BC2; text-decoration:none; border:1px solid rgba(12,155,194,0.4); border-radius:7px; padding:6px 12px; background:rgba(12,155,194,0.06)" data-sh="background:rgba(12,155,194,0.14);box-shadow:0 0 10px rgba(12,155,194,0.25)">全15回マップ ▸</a>
+    </div>
+  </div>
+
+  <div style="position:relative; z-index:1; max-width:960px; margin:0 auto; padding:0 26px 80px">
+
+    <!-- HERO -->
+    <div style="padding:64px 0 22px">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#C7892B">BLENDER_ROOM // LEC_11</span>
+        <span style="height:1px; width:60px; background:linear-gradient(90deg,#C7892B,transparent)"></span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:rgba(110,84,181,0.95)">TEXTURE ── 色と木目をのせる</span>
+      </div>
+      <div style="display:flex; align-items:baseline; gap:18px; margin-top:18px; flex-wrap:wrap">
+        <span style="display:inline-block; padding-right:0.18em; padding-left:0.06em; padding-bottom:0.14em; font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:92px; line-height:1; letter-spacing:-0.03em; background:linear-gradient(120deg,#E8A23A,#E5388F 52%,#6E54B5 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 2px 6px rgba(229,56,143,0.18))">11</span>
+        <h1 style="margin:0; font-family:'Noto Sans JP',sans-serif; font-weight:900; font-size:40px; line-height:1.25; letter-spacing:0.02em; color:#2A1A40">展開図に、<br>色と木目を塗る</h1>
+      </div>
+      <p style="margin:16px 0 0; font-size:15px; line-height:2; color:rgba(58,42,82,0.82); letter-spacing:0.06em">前回開いた<strong style="color:#0C9BC2">画用紙(UV)</strong>に、いよいよ絵を塗ります。狙うのは写真ではなく、<strong style="color:#E5388F">アニメ背景らしいフラットな固有色</strong>。<br>Blender内で直接塗る方法と、<strong style="color:#C7892B">Photoshopなど2Dソフト</strong>を行き来して描き込む「外部ツール連携」を身につけます。</p>
+
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:18px; margin-top:34px; align-items:stretch">
+        <div style="border:1px solid rgba(199,137,43,0.3); border-radius:14px; padding:24px 26px; background:#FFFFFF; box-shadow:0 8px 26px rgba(110,84,181,0.07)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#C7892B">TODAY'S GOAL ── 今日のゴール</div>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px">
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#E5388F; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#2A1A40"><strong style="color:#E5388F">フラットな固有色</strong>で、アニメ背景らしい質感を面で塗る</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#E5388F; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#2A1A40">UVを書き出し→<strong style="color:#C7892B">Photoshopで描き込み</strong>→読み込む「往復」のワークフロー</span>
+            </div>
+          </div>
+          <div style="margin-top:20px; padding-top:16px; border-top:1px dashed rgba(110,84,181,0.3); font-size:13px; line-height:2; color:rgba(58,42,82,0.7); letter-spacing:0.04em"><strong style="color:#C7892B">塗り絵の感覚。</strong>リアルに作り込むより、絵として気持ちいい色を。得意な2Dソフトを使っていいのが連携の強みです。</div>
+        </div>
+        <div style="border:1px solid rgba(110,84,181,0.25); border-radius:14px; padding:20px 22px 16px; background:#FFFFFF; box-shadow:0 8px 26px rgba(110,84,181,0.07); display:flex; flex-direction:column">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#0C9BC2">本日の成果物</div>
+          <div style="position:relative; flex:1; min-height:190px; display:flex; align-items:center; justify-content:center; padding:8px 0 14px">
+            <div style="position:relative; width:150px; height:150px">
+              <!-- grey base shape -->
+              <div style="position:absolute; left:33px; top:30px; width:84px; height:90px; border-radius:6px; background:#E7DECF; border:2px solid rgba(110,84,181,0.3)"></div>
+              <!-- flat colour wash sweeping in -->
+              <div style="position:absolute; left:33px; top:30px; width:84px; height:90px; border-radius:6px; background:linear-gradient(160deg,#E89B5A,#C77B3C); border:2px solid #C7892B; animation:kfWash 8s ease-in-out infinite"></div>
+              <!-- wood-grain lines -->
+              <span style="position:absolute; left:43px; top:54px; width:64px; height:2px; border-radius:2px; background:rgba(90,52,20,0.4); transform-origin:left; animation:kfGrain1 8s ease-in-out infinite"></span>
+              <span style="position:absolute; left:43px; top:74px; width:64px; height:2px; border-radius:2px; background:rgba(90,52,20,0.4); transform-origin:left; animation:kfGrain2 8s ease-in-out infinite"></span>
+              <span style="position:absolute; left:43px; top:94px; width:64px; height:2px; border-radius:2px; background:rgba(90,52,20,0.4); transform-origin:left; animation:kfGrain3 8s ease-in-out infinite"></span>
+              <span style="position:absolute; right:18px; top:14px; color:#E5388F; font-size:17px; animation:kfHeroSpark 8s linear infinite; text-shadow:0 0 10px rgba(229,56,143,0.6)">✦</span>
+            </div>
+          </div>
+          <div style="font-size:13px; font-weight:700; color:rgba(58,42,82,0.85); text-align:center; letter-spacing:0.06em; line-height:1.8">色と木目がきれいにのった<br>家具アセット<br><span style="font-weight:400; font-size:11.5px; color:rgba(110,84,181,0.95)">無地のモデル → 塗られた家具</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 01 フラットな固有色 -->
+    <div data-reveal="1" style="margin-top:64px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">01</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">アニメ背景は「固有色」で塗る</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">BASE COLOR // 写真じゃなく絵</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(58,42,82,0.78); letter-spacing:0.04em">リアルなザラつきや反射を作り込む必要はありません。アニメ背景は<strong style="color:#E5388F">そのモノが持つ「固有色」をフラットに</strong>のせるのが基本。光や影はあとで光のレッスンで足します。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px">
+        <div style="border:1px solid rgba(110,84,181,0.28); border-radius:14px; padding:22px 24px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">NG ── 作り込みすぎ</div>
+          <div style="margin-top:12px; font-size:14px; line-height:2; color:rgba(58,42,82,0.82)">写真のような細かい汚れや反射。<strong style="color:#2A1A40">アニメの中で浮いてしまい、</strong>線画の絵と馴染みません。</div>
+        </div>
+        <div style="border:1px solid rgba(229,56,143,0.3); border-radius:14px; padding:22px 24px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#E5388F">OK ── フラットな固有色</div>
+          <div style="margin-top:12px; font-size:14px; line-height:2; color:rgba(58,42,82,0.82)">木は木の色、布は布の色を<strong style="color:#E5388F">平らに一面</strong>。木目など最小限の柄だけ。絵としてスッと馴染みます。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 02 Blenderで塗る -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">02</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">Blenderの中で直接塗る</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">TEXTURE PAINT // 筆でのせる</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(58,42,82,0.78); letter-spacing:0.04em">まずはベースカラーを一色設定し、<strong style="color:#E5388F">テクスチャペイント</strong>モードでモデルに直接筆を入れます。立体を見ながら塗れるので、塗り分けの位置を確認しやすい。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div style="border:1px solid rgba(199,137,43,0.26); border-radius:14px; padding:20px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#C7892B; margin-bottom:14px">手順 ── 一色 → 筆で塗る</div>
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:13px; line-height:1.9; color:rgba(58,42,82,0.85)">
+              <span style="color:rgba(58,42,82,0.6)">マテリアルにベースカラー →</span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; padding:0 11px; height:28px; border:1px solid rgba(229,56,143,0.45); border-bottom:3px solid rgba(229,56,143,0.55); border-radius:6px; background:#FFFFFF; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#E5388F">Texture Paint</span>
+              <span style="color:rgba(58,42,82,0.6)">→ 筆で塗り分け →</span>
+              <span style="display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:28px; padding:0 9px; border:1px solid rgba(12,155,194,0.5); border-bottom:3px solid rgba(12,155,194,0.6); border-radius:6px; background:#FFFFFF; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:#0C9BC2">F</span>
+              <span style="color:rgba(58,42,82,0.6)">で筆サイズ</span>
+            </div>
+            <div style="margin-top:14px; padding-top:12px; border-top:1px dashed rgba(110,84,181,0.3); font-size:12.5px; line-height:1.9; color:rgba(110,84,181,0.95)">塗った絵は「画像テクスチャ」として保存。こまめに保存しないと消えるので注意。</div>
+          </div>
+          <div style="border:1px solid rgba(12,155,194,0.3); border-radius:14px; padding:18px 22px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); display:flex; gap:14px; align-items:flex-start">
+            <span style="color:#0C9BC2; font-size:15px; line-height:1.6; flex-shrink:0">▸</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#0C9BC2">画面の使い分け</div>
+              <div style="margin-top:6px; font-size:13px; line-height:1.95; color:rgba(58,42,82,0.82)">3Dビューで<strong style="color:#2A1A40">立体に直接</strong>、UVエディタで<strong style="color:#E5388F">展開図の上から</strong>。どちらに塗っても同じ1枚の画像に反映されます。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- brush + swatch visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(110,84,181,0.25); border-radius:14px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 0">
+          <div style="position:relative; width:104px; height:84px">
+            <!-- swatch base -->
+            <div style="position:absolute; inset:0; border:2px solid rgba(110,84,181,0.3); border-radius:4px; background:#EFE7D8"></div>
+            <!-- painted dabs -->
+            <span style="position:absolute; left:14px; top:18px; width:30px; height:30px; border-radius:50%; background:rgba(232,155,90,0.85); animation:kfDab 8s ease-in-out infinite"></span>
+            <span style="position:absolute; left:40px; top:40px; width:34px; height:34px; border-radius:50%; background:rgba(232,155,90,0.85); animation:kfDab 8s ease-in-out infinite 0.4s"></span>
+            <span style="position:absolute; left:62px; top:16px; width:28px; height:28px; border-radius:50%; background:rgba(229,56,143,0.55); animation:kfDab 8s ease-in-out infinite 0.8s"></span>
+            <!-- brush -->
+            <span style="position:absolute; left:6px; top:2px; font-size:24px; animation:kfBrush 8s ease-in-out infinite; filter:drop-shadow(0 2px 3px rgba(110,84,181,0.4))">✏</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:18px">
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 11px; border:1px solid rgba(229,56,143,0.45); border-bottom:3px solid rgba(229,56,143,0.55); border-radius:6px; background:#FFFFFF; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; animation:kfTKey 8s linear infinite">Texture Paint</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 03 外部ツール連携 -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#C7892B; line-height:1">03</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#2A1A40">Photoshopと行き来して描く</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(110,84,181,0.95)">PS LINK // 得意な道具で</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(58,42,82,0.78); letter-spacing:0.04em">細かい絵は使い慣れた<strong style="color:#C7892B">2Dソフト</strong>で描くのが一番速い。UVの「下書き」を書き出し、Photoshop等で描き込んで、画像を貼り直す<strong style="color:#0C9BC2">往復ワークフロー</strong>を覚えましょう。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="border:1px solid rgba(199,137,43,0.26); border-radius:14px; padding:22px 24px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06)">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#C7892B; margin-bottom:16px">WORKFLOW ── 往復の4ステップ</div>
+          <div style="display:flex; flex-direction:column; gap:0">
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px dashed rgba(110,84,181,0.22)">
+              <span style="flex-shrink:0; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,#E8A23A,#E5388F); display:flex; align-items:center; justify-content:center; color:#fff; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600">1</span>
+              <span style="font-size:13.5px; line-height:1.7; color:rgba(58,42,82,0.85)"><strong style="color:#2A1A40">UVを書き出す</strong> ── UVエディタから「UV配置をエクスポート」。線だけの下書きPNGが出ます。</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px dashed rgba(110,84,181,0.22)">
+              <span style="flex-shrink:0; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,#E8A23A,#E5388F); display:flex; align-items:center; justify-content:center; color:#fff; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600">2</span>
+              <span style="font-size:13.5px; line-height:1.7; color:rgba(58,42,82,0.85)"><strong style="color:#2A1A40">PSで描く</strong> ── 下書きを下のレイヤーに敷いて、その上から色と木目を描き込む。</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px dashed rgba(110,84,181,0.22)">
+              <span style="flex-shrink:0; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,#E8A23A,#E5388F); display:flex; align-items:center; justify-content:center; color:#fff; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600">3</span>
+              <span style="font-size:13.5px; line-height:1.7; color:rgba(58,42,82,0.85)"><strong style="color:#2A1A40">画像で書き出す</strong> ── 下書きレイヤーを消して、PNGで保存。</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:11px 0">
+              <span style="flex-shrink:0; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,#E8A23A,#E5388F); display:flex; align-items:center; justify-content:center; color:#fff; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600">4</span>
+              <span style="font-size:13.5px; line-height:1.7; color:rgba(58,42,82,0.85)"><strong style="color:#2A1A40">Blenderに貼る</strong> ── マテリアルのベースカラーに画像を接続。立体にピタリと反映。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- round-trip visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(110,84,181,0.25); border-radius:14px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.06); overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 0">
+          <div style="display:flex; align-items:center; gap:6px">
+            <!-- Blender side -->
+            <div style="width:58px; height:64px; border-radius:6px; border:2px solid #E5388F; background:rgba(229,56,143,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; animation:kfTripA 8s ease-in-out infinite">
+              <div style="width:24px; height:24px; border-radius:4px; background:rgba(229,56,143,0.2); border:1px solid #E5388F"></div>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:0.12em; color:#E5388F">BLENDER</span>
+            </div>
+            <!-- arrows -->
+            <div style="display:flex; flex-direction:column; gap:6px; align-items:center">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#C7892B; animation:kfArrowR 8s ease-in-out infinite">▸</span>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#0C9BC2; animation:kfArrowL 8s ease-in-out infinite">◂</span>
+            </div>
+            <!-- PS side -->
+            <div style="width:58px; height:64px; border-radius:6px; border:2px solid #0C9BC2; background:rgba(12,155,194,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; animation:kfTripB 8s ease-in-out infinite">
+              <div style="width:24px; height:24px; border-radius:4px; background:linear-gradient(135deg,rgba(232,155,90,0.6),rgba(199,123,60,0.6)); border:1px solid #0C9BC2"></div>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:0.12em; color:#0C9BC2">2D PAINT</span>
+            </div>
+          </div>
+          <div style="margin-top:16px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.16em; color:rgba(110,84,181,0.85)">UVを往復させる</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREENSHOT SLOT -->
+    <div data-reveal="1" style="margin-top:48px; border:1px dashed rgba(110,84,181,0.45); border-radius:14px; padding:18px; background:#FFFFFF; box-shadow:0 6px 20px rgba(110,84,181,0.05)">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.3em; color:rgba(110,84,181,0.95); margin-bottom:12px">YOUR SHOT ── 塗れたテクスチャ or 家具アセットのスクショをここへ</div>
+      <image-slot id="lec11-paint" shape="rounded" radius="10" placeholder="色と木目がのった家具、またはPS連携の画面をドラッグ" style="display:block; width:100%; height:300px"></image-slot>
+    </div>
+
+    <!-- SUMMARY -->
+    <div data-reveal="1" style="margin-top:48px; border:1px solid rgba(199,137,43,0.32); border-radius:16px; padding:28px 30px; background:linear-gradient(180deg,#FFFFFF,#FBF4EC); box-shadow:0 10px 30px rgba(110,84,181,0.08); position:relative; overflow:hidden">
+      <span style="position:absolute; right:18px; top:12px; color:#C7892B; font-size:18px; animation:kfFloat 4s ease-in-out infinite">✦</span>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#C7892B">RECAP ── 今日のキー、ぜんぶ</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px">
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(229,56,143,0.45); border-radius:8px; padding:7px 12px; background:rgba(229,56,143,0.06); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#E5388F">固有色</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">フラットに面で塗る</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(229,56,143,0.45); border-radius:8px; padding:7px 12px; background:rgba(229,56,143,0.06); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#E5388F">Texture Paint</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">Blender内で塗る</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(12,155,194,0.45); border-radius:8px; padding:7px 12px; background:rgba(12,155,194,0.06); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#0C9BC2">UV書き出し</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">PSへ下書き</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(199,137,43,0.45); border-radius:8px; padding:7px 12px; background:rgba(199,137,43,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#C7892B">往復</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(58,42,82,0.75)">描いて → 貼り直す</span></span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:24px; padding-top:18px; border-top:1px dashed rgba(110,84,181,0.3); flex-wrap:wrap">
+        <div style="font-size:13px; line-height:1.9; color:rgba(58,42,82,0.78)">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#0C9BC2">NEXT ▸ LEC_12</span><br>
+          <strong style="color:#2A1A40">部屋のレイアウト ── 作ってきた家具を部屋に大集合。アペンドとカメラワークで一枚の画に。</strong>
+        </div>
+        <div style="display:flex; gap:10px">
+          <a href="10.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#0C9BC2; text-decoration:none; border:1px solid rgba(12,155,194,0.4); border-radius:9px; padding:12px 18px; background:rgba(12,155,194,0.06)" data-sh="background:rgba(12,155,194,0.14)">◂ 第10回</a>
+          <a href="12.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#FFFFFF; text-decoration:none; border-radius:9px; padding:12px 20px; background:linear-gradient(135deg,#E5388F,#7A5CC0); font-weight:600; box-shadow:0 6px 18px rgba(229,56,143,0.3)" data-sh="box-shadow:0 8px 26px rgba(229,56,143,0.5)">第12回へ ▸</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:48px; display:flex; align-items:center; justify-content:center; gap:12px; opacity:0.7">
+      <img src="assets/blender_logo.png" alt="Blender" style="height:22px; filter:drop-shadow(0 1px 3px rgba(110,84,181,0.25))">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(110,84,181,0.8)">BLENDER ROOM // アニメ美術のためのBlender入門 · 全15回</span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  document.querySelectorAll('[data-sh]').forEach(function(el){
+    var b=el.getAttribute('style')||'';
+    el.addEventListener('mouseenter',function(){el.style.cssText=b+';'+el.getAttribute('data-sh');});
+    el.addEventListener('mouseleave',function(){el.style.cssText=b;});
+  });
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target);}
+    });
+  },{threshold:0.06});
+  document.querySelectorAll('[data-reveal]').forEach(function(el){
+    var r=el.getBoundingClientRect();
+    if(r.top<window.innerHeight*0.92)return;
+    el.style.opacity='0';el.style.transform='translateY(18px)';
+    el.style.transition='opacity 0.7s ease,transform 0.7s cubic-bezier(0.22,1,0.36,1)';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>

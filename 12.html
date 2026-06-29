@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLENDER ROOM // LEC_12 – 部屋のレイアウト(アペンドとカメラワーク)</title>
+<script src="./image-slot.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700;900&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500;1,700&display=swap" rel="stylesheet">
+<style>
+  html{scrollbar-color:rgba(255,79,168,0.6) rgba(20,10,40,0.6)}
+  body{margin:0;color:#F8EFFF;
+    background:
+      radial-gradient(ellipse 80% 55% at 88% -10%, rgba(184,80,255,0.32), transparent 60%),
+      radial-gradient(ellipse 65% 50% at -10% 18%, rgba(255,122,194,0.17), transparent 60%),
+      radial-gradient(ellipse 70% 55% at 50% 115%, rgba(90,233,255,0.14), transparent 65%),
+      linear-gradient(180deg,#2b1852 0%,#190d34 100%);
+    background-attachment:fixed;}
+  ::selection{background:rgba(255,79,168,0.5)}
+  @keyframes kfTwinkle{0%,100%{opacity:0.5}50%{opacity:0.95}}
+  @keyframes kfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  /* hero: furniture appends in one by one -> camera frames the room -> sparkle */
+  @keyframes kfApp1{0%,4%{opacity:0;transform:translateY(-22px) scale(0.6)}16%,100%{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes kfApp2{0%,16%{opacity:0;transform:translateY(-22px) scale(0.6)}28%,100%{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes kfApp3{0%,28%{opacity:0;transform:translateY(-22px) scale(0.6)}40%,100%{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes kfHeroFrame{0%,48%{opacity:0;transform:scale(1.4)}60%,100%{opacity:1;transform:scale(1)}}
+  @keyframes kfHeroSpark{0%,70%{opacity:0;transform:scale(0.3)}78%,92%{opacity:1;transform:scale(1)}100%{opacity:0}}
+  /* section 01: items fly out of a file box */
+  @keyframes kfFly1{0%,8%{opacity:0;transform:translate(-30px,8px) scale(0.5)}24%,100%{opacity:1;transform:translate(0,0) scale(1)}}
+  @keyframes kfFly2{0%,22%{opacity:0;transform:translate(-30px,8px) scale(0.5)}38%,100%{opacity:1;transform:translate(0,0) scale(1)}}
+  @keyframes kfFly3{0%,36%{opacity:0;transform:translate(-30px,8px) scale(0.5)}52%,100%{opacity:1;transform:translate(0,0) scale(1)}}
+  @keyframes kfBoxGlow{0%,100%{box-shadow:0 0 6px rgba(90,233,255,0.4)}50%{box-shadow:0 0 16px rgba(90,233,255,0.85)}}
+  /* section 02: camera orbits and the viewfinder snaps */
+  @keyframes kfCamMove{0%,10%{transform:translateX(-22px) rotate(-8deg)}50%{transform:translateX(20px) rotate(8deg)}90%,100%{transform:translateX(0) rotate(0deg)}}
+  @keyframes kfVF{0%,60%{opacity:0;transform:scale(1.3)}74%,100%{opacity:1;transform:scale(1)}}
+  @keyframes kfCKey{0%,20%,100%{background-color:rgba(255,79,168,0.08);color:#FF7AC2}30%,46%{background-color:#FF4FA8;color:#22103d;box-shadow:0 0 14px rgba(255,79,168,0.7)}}
+  /* section 03: lens zoom — subject stays, background compresses */
+  @keyframes kfLensWide{0%,46%{opacity:1}54%,96%{opacity:0}100%{opacity:1}}
+  @keyframes kfLensTele{0%,46%{opacity:0}54%,96%{opacity:1}100%{opacity:0}}
+  @keyframes kfLensLabel{0%,46%{opacity:0.4}54%,96%{opacity:1}100%{opacity:0.4}}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:0.001s !important;animation-iteration-count:1 !important}}
+</style>
+</head>
+<body>
+<div style="font-family:'Noto Sans JP',sans-serif; min-height:100vh; overflow-x:hidden">
+
+  <div style="position:fixed; inset:0; pointer-events:none; z-index:0; mix-blend-mode:screen; opacity:0.85; animation:kfTwinkle 5s ease-in-out infinite; background-image:radial-gradient(1.5px 1.5px at 22px 34px, rgba(255,255,255,0.8), transparent 60%),radial-gradient(1px 1px at 120px 90px, rgba(255,210,122,0.8), transparent 60%),radial-gradient(1.5px 1.5px at 200px 160px, rgba(181,142,255,0.8), transparent 60%),radial-gradient(1px 1px at 280px 50px, rgba(90,233,255,0.7), transparent 60%),radial-gradient(1.5px 1.5px at 330px 210px, rgba(255,122,194,0.7), transparent 60%); background-size:380px 260px"></div>
+
+  <!-- TOPBAR -->
+  <div style="position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:16px; height:52px; padding:0 22px; background:rgba(24,12,46,0.82); backdrop-filter:blur(8px); border-bottom:1px solid rgba(255,210,122,0.18)">
+    <div style="display:flex; align-items:center; gap:10px">
+      <span style="color:#FFD27A; font-size:14px">✦</span>
+      <span style="display:inline-block; padding-right:0.35em; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic; font-size:19px; letter-spacing:0.04em; background:linear-gradient(120deg,#FFE9B0,#FFD27A 26%,#FF4FA8 62%,#B58EFF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">BLENDER ROOM</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(181,142,255,0.85)">部屋を、つくろう。</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.25em; color:#FFD27A">LEC 12 / 15</span>
+      <a href="index.html" style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:#5AE9FF; text-decoration:none; border:1px solid rgba(90,233,255,0.4); border-radius:7px; padding:6px 12px; background:rgba(90,233,255,0.06)" data-sh="background:rgba(90,233,255,0.16);box-shadow:0 0 10px rgba(90,233,255,0.4)">全15回マップ ▸</a>
+    </div>
+  </div>
+
+  <div style="position:relative; z-index:1; max-width:960px; margin:0 auto; padding:0 26px 80px">
+
+    <!-- HERO -->
+    <div style="padding:64px 0 22px">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#FFD27A">BLENDER_ROOM // LEC_12</span>
+        <span style="height:1px; width:60px; background:linear-gradient(90deg,#FFD27A,transparent)"></span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.2em; color:rgba(181,142,255,0.9)">SCENE ── 部屋を組み、カメラで切り取る</span>
+      </div>
+      <div style="display:flex; align-items:baseline; gap:18px; margin-top:18px; flex-wrap:wrap">
+        <span style="display:inline-block; padding-right:0.18em; padding-left:0.06em; padding-bottom:0.14em; font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:92px; line-height:1; letter-spacing:-0.03em; background:linear-gradient(120deg,#FFE9B0,#FFD27A 26%,#FF4FA8 62%,#B58EFF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; filter:drop-shadow(0 0 26px rgba(255,79,168,0.35))">12</span>
+        <h1 style="margin:0; font-family:'Noto Sans JP',sans-serif; font-weight:900; font-size:40px; line-height:1.25; letter-spacing:0.02em; background:linear-gradient(110deg,#FFFFFF,#FFD9EE 45%,#CDB4FF 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent">家具を集めて、<br>一枚の画に切り取る</h1>
+      </div>
+      <p style="margin:16px 0 0; font-size:15px; line-height:2; color:rgba(248,239,255,0.78); letter-spacing:0.06em">いよいよ部屋づくり。今までの回で作った家具を1つのシーンに<strong style="color:#5AE9FF">「アペンド」</strong>で大集合させ、絵コンテに合わせて<strong style="color:#FF7AC2">カメラとレンズ</strong>でベストな一枚を決めます。<br>同じ部屋でも、置き方とアングルで「アニメのワンシーン」になる。</p>
+
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:18px; margin-top:34px; align-items:stretch">
+        <div style="border:1px solid rgba(255,210,122,0.25); border-radius:14px; padding:24px 26px; background:linear-gradient(180deg,rgba(255,122,194,0.07),rgba(181,142,255,0.04))">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#FFD27A">TODAY'S GOAL ── 今日のゴール</div>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px">
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#FF7AC2; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#F8EFFF">別ファイルの家具を<strong style="color:#5AE9FF">アペンド</strong>で集め、部屋にレイアウトする</span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="color:#FF7AC2; font-size:14px; line-height:1.9">▸</span>
+              <span style="font-size:15px; font-weight:700; line-height:1.9; color:#F8EFFF"><strong style="color:#FF7AC2">カメラ</strong>を置き、絵コンテに合う<strong style="color:#FF7AC2">アングルとレンズ</strong>を決める</span>
+            </div>
+          </div>
+          <div style="margin-top:20px; padding-top:16px; border-top:1px dashed rgba(181,142,255,0.3); font-size:13px; line-height:2; color:rgba(248,239,255,0.66); letter-spacing:0.04em"><strong style="color:#FFD27A">演出のレッスン。</strong>モデリングはもう済んでいます。今日は「監督・カメラマン」になって、どう見せるかを決める回です。</div>
+        </div>
+        <div style="border:1px solid rgba(181,142,255,0.3); border-radius:14px; padding:20px 22px 16px; background:rgba(13,6,32,0.45); display:flex; flex-direction:column">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#5AE9FF">本日の成果物</div>
+          <div style="position:relative; flex:1; min-height:190px; display:flex; align-items:flex-end; justify-content:center; padding-bottom:18px">
+            <div style="position:relative; width:180px; height:140px">
+              <!-- room floor + back wall -->
+              <div style="position:absolute; left:14px; right:14px; bottom:18px; height:54px; background:rgba(181,142,255,0.10); border:1.5px solid rgba(181,142,255,0.35); border-radius:4px"></div>
+              <!-- furniture appending in -->
+              <div style="position:absolute; left:30px; bottom:24px; width:34px; height:40px; background:rgba(255,122,194,0.24); border:2px solid #FF7AC2; border-radius:4px; animation:kfApp1 8s ease-in-out infinite"></div>
+              <div style="position:absolute; left:74px; bottom:24px; width:30px; height:26px; background:rgba(90,233,255,0.2); border:2px solid #5AE9FF; border-radius:4px; animation:kfApp2 8s ease-in-out infinite"></div>
+              <div style="position:absolute; left:114px; bottom:24px; width:38px; height:34px; background:rgba(255,210,122,0.18); border:2px solid #FFD27A; border-radius:4px; animation:kfApp3 8s ease-in-out infinite"></div>
+              <!-- camera framing brackets -->
+              <div style="position:absolute; left:2px; top:2px; right:2px; bottom:2px; animation:kfHeroFrame 8s ease-in-out infinite">
+                <span style="position:absolute; left:0; top:0; width:18px; height:18px; border-left:2px solid #FF4FA8; border-top:2px solid #FF4FA8"></span>
+                <span style="position:absolute; right:0; top:0; width:18px; height:18px; border-right:2px solid #FF4FA8; border-top:2px solid #FF4FA8"></span>
+                <span style="position:absolute; left:0; bottom:0; width:18px; height:18px; border-left:2px solid #FF4FA8; border-bottom:2px solid #FF4FA8"></span>
+                <span style="position:absolute; right:0; bottom:0; width:18px; height:18px; border-right:2px solid #FF4FA8; border-bottom:2px solid #FF4FA8"></span>
+              </div>
+              <span style="position:absolute; right:6px; top:-6px; color:#FFD27A; font-size:17px; animation:kfHeroSpark 8s linear infinite; text-shadow:0 0 12px rgba(255,210,122,0.9)">✦</span>
+            </div>
+          </div>
+          <div style="font-size:13px; font-weight:700; color:rgba(248,239,255,0.85); text-align:center; letter-spacing:0.06em; line-height:1.8">アニメのワンシーンの<br>ようになった部屋の画面<br><span style="font-weight:400; font-size:11.5px; color:rgba(181,142,255,0.95)">集めて、置いて、切り取る</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 01 アペンド -->
+    <div data-reveal="1" style="margin-top:64px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#FFD27A; line-height:1">01</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#F8EFFF">家具を呼び込む ── アペンド</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(181,142,255,0.9)">APPEND // 別ファイルから持ち込む</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(248,239,255,0.7); letter-spacing:0.04em">家具は別々のファイルに保存してあるはず。それを部屋のファイルに<strong style="color:#5AE9FF">「アペンド」</strong>で読み込みます。コピーが取り込まれるので、元のファイルは汚れません。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div style="border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03))">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FFD27A; margin-bottom:14px">手順 ── ファイル → アペンド</div>
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:13px; line-height:1.9; color:rgba(248,239,255,0.8)">
+              <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 11px; border:1px solid rgba(255,210,122,0.5); border-bottom:3px solid rgba(255,210,122,0.6); border-radius:6px; background:rgba(255,210,122,0.08); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#FFD27A">File ▸ Append</span>
+              <span style="color:rgba(248,239,255,0.6)">→ .blendを開く →</span>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#5AE9FF">Object</span>
+              <span style="color:rgba(248,239,255,0.6)">の中の家具を選ぶ</span>
+            </div>
+            <div style="margin-top:14px; padding-top:12px; border-top:1px dashed rgba(181,142,255,0.3); font-size:12.5px; line-height:1.9; color:rgba(181,142,255,0.95)"><strong style="color:#5AE9FF">アペンド</strong>=コピーを取り込む / <strong style="color:#FF7AC2">リンク</strong>=参照だけ。今回は自由に動かしたいのでアペンド。</div>
+          </div>
+          <div style="border:1px solid rgba(90,233,255,0.32); border-radius:14px; padding:18px 22px; background:linear-gradient(180deg,rgba(90,233,255,0.07),rgba(181,142,255,0.03)); display:flex; gap:14px; align-items:flex-start">
+            <span style="color:#5AE9FF; font-size:15px; line-height:1.6; flex-shrink:0">▸</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#5AE9FF">置く時のコツ</div>
+              <div style="margin-top:6px; font-size:13px; line-height:1.95; color:rgba(248,239,255,0.82)">スケール感を最初に合わせる。床に<strong style="color:#F8EFFF">きちんと接地</strong>させ、<strong style="color:#FF7AC2">余白(間)</strong>を残して配置すると画が締まります。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- append visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(181,142,255,0.3); border-radius:14px; background:#160b30; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:22px 0">
+          <div style="position:relative; width:170px; height:96px; display:flex; align-items:center">
+            <!-- file box -->
+            <div style="width:40px; height:50px; border:2px solid #5AE9FF; border-radius:5px; background:rgba(90,233,255,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; animation:kfBoxGlow 3s ease-in-out infinite">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:8px; color:#5AE9FF">.blend</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#FFD27A; margin:0 6px">▸</span>
+            <!-- room receiving items -->
+            <div style="position:relative; flex:1; height:64px; border:1.5px dashed rgba(181,142,255,0.4); border-radius:5px">
+              <span style="position:absolute; left:8px; bottom:8px; width:20px; height:24px; background:rgba(255,122,194,0.26); border:2px solid #FF7AC2; border-radius:3px; animation:kfFly1 8s ease-in-out infinite"></span>
+              <span style="position:absolute; left:36px; bottom:8px; width:18px; height:16px; background:rgba(90,233,255,0.2); border:2px solid #5AE9FF; border-radius:3px; animation:kfFly2 8s ease-in-out infinite"></span>
+              <span style="position:absolute; left:62px; bottom:8px; width:22px; height:20px; background:rgba(255,210,122,0.18); border:2px solid #FFD27A; border-radius:3px; animation:kfFly3 8s ease-in-out infinite"></span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:16px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; color:rgba(181,142,255,0.9)">呼び込む</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 11px; border:1px solid rgba(90,233,255,0.5); border-bottom:3px solid rgba(90,233,255,0.6); border-radius:6px; background:rgba(90,233,255,0.08); font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; color:#5AE9FF">アペンド</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 02 カメラ -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#FFD27A; line-height:1">02</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#F8EFFF">アングルを決める ── カメラ</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(181,142,255,0.9)">CAMERA // 絵コンテに合わせる</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(248,239,255,0.7); letter-spacing:0.04em">カメラを1台追加し、絵コンテのアングルに合わせます。視点をのぞきながら動かせる<strong style="color:#5AE9FF">「カメラにビューをロック」</strong>が便利。覗いて、構図を整えます。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">1</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#F8EFFF">カメラを置いて <span style="color:#5AE9FF">覗く</span></div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)">カメラを追加し <span style="display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:24px; padding:0 8px; border:1px solid rgba(90,233,255,0.5); border-bottom:3px solid rgba(90,233,255,0.6); border-radius:6px; background:rgba(90,233,255,0.08); font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#5AE9FF; vertical-align:middle">0</span> でカメラ視点へ。テンキー0で切り替えます。</div>
+            </div>
+          </div>
+          <div data-reveal="1" style="display:grid; grid-template-columns:54px 1fr; gap:18px; border:1px solid rgba(255,210,122,0.22); border-radius:14px; padding:20px 22px; background:linear-gradient(180deg,rgba(255,122,194,0.06),rgba(181,142,255,0.03)); align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; color:#FFD27A; text-align:center; line-height:1.6">STEP<br><span style="font-size:24px; font-family:'Cormorant Garamond',serif; font-style:italic; color:#FF7AC2">2</span></div>
+            <div>
+              <div style="font-size:15.5px; font-weight:900; color:#F8EFFF">ビューをロックして <span style="color:#FF7AC2">構図決め</span></div>
+              <div style="margin-top:6px; font-size:13px; line-height:2; color:rgba(248,239,255,0.72)"><strong style="color:#5AE9FF">「ビューをロック」</strong>をオンにすると、視点操作がそのままカメラの動きに。覗きながら構図を追い込めます。</div>
+            </div>
+          </div>
+          <div style="border:1px solid rgba(255,79,168,0.35); border-radius:14px; padding:18px 22px; background:linear-gradient(180deg,rgba(255,79,168,0.08),rgba(255,122,194,0.03)); display:flex; gap:14px; align-items:flex-start">
+            <span style="color:#FF7AC2; font-size:15px; line-height:1.6; flex-shrink:0">✦</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FF7AC2">構図のコツ</div>
+              <div style="margin-top:6px; font-size:13px; line-height:1.95; color:rgba(248,239,255,0.82)"><strong style="color:#F8EFFF">三分割の線</strong>を表示して、主役を交点に。少し低い/高いアングルで「らしさ」が出ます。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- camera visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(181,142,255,0.3); border-radius:14px; background:#160b30; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:22px 0">
+          <div style="position:relative; width:130px; height:96px">
+            <!-- subject -->
+            <div style="position:absolute; left:50%; bottom:30px; transform:translateX(-50%); width:30px; height:36px; background:rgba(255,122,194,0.24); border:2px solid #FF7AC2; border-radius:4px"></div>
+            <!-- viewfinder thirds -->
+            <div style="position:absolute; left:14px; top:8px; right:14px; bottom:24px; animation:kfVF 8s ease-in-out infinite">
+              <span style="position:absolute; left:0; top:0; width:14px; height:14px; border-left:2px solid #FF4FA8; border-top:2px solid #FF4FA8"></span>
+              <span style="position:absolute; right:0; top:0; width:14px; height:14px; border-right:2px solid #FF4FA8; border-top:2px solid #FF4FA8"></span>
+              <span style="position:absolute; left:0; bottom:0; width:14px; height:14px; border-left:2px solid #FF4FA8; border-bottom:2px solid #FF4FA8"></span>
+              <span style="position:absolute; right:0; bottom:0; width:14px; height:14px; border-right:2px solid #FF4FA8; border-bottom:2px solid #FF4FA8"></span>
+              <span style="position:absolute; left:33%; top:0; bottom:0; width:1px; background:rgba(90,233,255,0.4)"></span>
+              <span style="position:absolute; left:66%; top:0; bottom:0; width:1px; background:rgba(90,233,255,0.4)"></span>
+              <span style="position:absolute; top:33%; left:0; right:0; height:1px; background:rgba(90,233,255,0.4)"></span>
+              <span style="position:absolute; top:66%; left:0; right:0; height:1px; background:rgba(90,233,255,0.4)"></span>
+            </div>
+            <!-- moving camera glyph -->
+            <div style="position:absolute; left:50%; bottom:-2px; transform:translateX(-50%); animation:kfCamMove 8s ease-in-out infinite; filter:drop-shadow(0 0 8px rgba(255,79,168,0.7))">
+              <span style="display:block; width:22px; height:15px; background:rgba(255,79,168,0.25); border:2px solid #FF4FA8; border-radius:3px; position:relative">
+                <span style="position:absolute; right:-7px; top:2px; width:0; height:0; border-top:4px solid transparent; border-bottom:4px solid transparent; border-left:7px solid #FF4FA8"></span>
+                <span style="position:absolute; left:3px; top:2.5px; width:6px; height:6px; border-radius:50%; border:1.5px solid #FF7AC2"></span>
+              </span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:14px">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.18em; color:rgba(181,142,255,0.9)">覗いて決める</span>
+            <span style="display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 11px; border:1px solid rgba(255,79,168,0.55); border-radius:6px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; animation:kfCKey 8s linear infinite">テンキー 0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 03 レンズ -->
+    <div data-reveal="1" style="margin-top:72px">
+      <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap">
+        <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:44px; color:#FFD27A; line-height:1">03</span>
+        <h2 style="margin:0; font-weight:900; font-size:26px; letter-spacing:0.04em; color:#F8EFFF">印象を変える ── レンズ(焦点距離)</h2>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(181,142,255,0.9)">LENS // 広角 ⇄ 望遠</span>
+      </div>
+      <p style="margin:12px 0 0; font-size:14px; line-height:2; color:rgba(248,239,255,0.7); letter-spacing:0.04em">同じアングルでも<strong style="color:#FF7AC2">焦点距離(mm)</strong>を変えると印象が激変。<strong style="color:#5AE9FF">広角</strong>は広く奥行きが出てダイナミックに、<strong style="color:#FFD27A">望遠</strong>は奥が圧縮されて落ち着いた画に。</p>
+
+      <div style="display:grid; grid-template-columns:1fr 280px; gap:18px; margin-top:24px; align-items:stretch">
+        <div style="display:flex; flex-direction:column; gap:14px">
+          <div style="display:flex; flex-wrap:wrap; gap:12px">
+            <div style="flex:1; min-width:200px; border:1px solid rgba(90,233,255,0.32); border-radius:14px; padding:18px 20px; background:linear-gradient(180deg,rgba(90,233,255,0.07),rgba(181,142,255,0.03))">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#5AE9FF">広角 ── 〜24mm</div>
+              <div style="margin-top:8px; font-size:13px; line-height:1.9; color:rgba(248,239,255,0.8)">空間が<strong style="color:#5AE9FF">広く・奥行き強調</strong>。狭い部屋でも全体が入る。歪みでダイナミックに。</div>
+            </div>
+            <div style="flex:1; min-width:200px; border:1px solid rgba(255,210,122,0.32); border-radius:14px; padding:18px 20px; background:linear-gradient(180deg,rgba(255,210,122,0.08),rgba(181,142,255,0.03))">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FFD27A">望遠 ── 85mm〜</div>
+              <div style="margin-top:8px; font-size:13px; line-height:1.9; color:rgba(248,239,255,0.8)">奥が<strong style="color:#FFD27A">圧縮</strong>され、落ち着いた静かな画に。主役が引き立つ。</div>
+            </div>
+          </div>
+          <div style="border:1px solid rgba(255,79,168,0.35); border-radius:14px; padding:18px 22px; background:linear-gradient(180deg,rgba(255,79,168,0.08),rgba(255,122,194,0.03)); display:flex; gap:14px; align-items:flex-start">
+            <span style="color:#FF7AC2; font-size:15px; line-height:1.6; flex-shrink:0">✦</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#FF7AC2">アニメ背景の定番</div>
+              <div style="margin-top:6px; font-size:13px; line-height:1.95; color:rgba(248,239,255,0.82)">部屋の背景美術は<strong style="color:#F8EFFF">標準〜やや広角(35〜50mm)</strong>が馴染みやすい。レンズはカメラデータのプロパティで設定します。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- lens visual -->
+        <div data-reveal="1" style="position:relative; border:1px solid rgba(181,142,255,0.3); border-radius:14px; background:#160b30; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:22px 0">
+          <div style="position:relative; width:130px; height:96px">
+            <!-- WIDE state -->
+            <div style="position:absolute; inset:0; animation:kfLensWide 8s ease-in-out infinite">
+              <!-- floor lines spread wide -->
+              <span style="position:absolute; left:50%; bottom:10px; width:118px; height:1.5px; background:rgba(90,233,255,0.5); transform:translateX(-50%)"></span>
+              <span style="position:absolute; left:6px; bottom:10px; width:1.5px; height:54px; background:rgba(90,233,255,0.4); transform:rotate(20deg); transform-origin:bottom"></span>
+              <span style="position:absolute; right:6px; bottom:10px; width:1.5px; height:54px; background:rgba(90,233,255,0.4); transform:rotate(-20deg); transform-origin:bottom"></span>
+              <div style="position:absolute; left:50%; bottom:12px; transform:translateX(-50%); width:30px; height:36px; background:rgba(255,122,194,0.24); border:2px solid #FF7AC2; border-radius:4px"></div>
+            </div>
+            <!-- TELE state -->
+            <div style="position:absolute; inset:0; animation:kfLensTele 8s ease-in-out infinite">
+              <span style="position:absolute; left:50%; bottom:10px; width:60px; height:1.5px; background:rgba(255,210,122,0.55); transform:translateX(-50%)"></span>
+              <span style="position:absolute; left:35px; bottom:10px; width:1.5px; height:46px; background:rgba(255,210,122,0.45); transform:rotate(4deg); transform-origin:bottom"></span>
+              <span style="position:absolute; right:35px; bottom:10px; width:1.5px; height:46px; background:rgba(255,210,122,0.45); transform:rotate(-4deg); transform-origin:bottom"></span>
+              <div style="position:absolute; left:50%; bottom:12px; transform:translateX(-50%); width:36px; height:42px; background:rgba(255,122,194,0.24); border:2px solid #FF7AC2; border-radius:4px"></div>
+            </div>
+          </div>
+          <div style="position:relative; height:18px; margin-top:12px; width:100%; text-align:center">
+            <span style="position:absolute; inset:0; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.18em; color:#5AE9FF; animation:kfLensWide 8s ease-in-out infinite">WIDE · 広角</span>
+            <span style="position:absolute; inset:0; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.18em; color:#FFD27A; animation:kfLensTele 8s ease-in-out infinite">TELE · 望遠</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREENSHOT SLOT -->
+    <div data-reveal="1" style="margin-top:48px; border:1px dashed rgba(181,142,255,0.45); border-radius:14px; padding:18px; background:rgba(13,6,32,0.4)">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.3em; color:rgba(181,142,255,0.9); margin-bottom:12px">YOUR SHOT ── カメラ視点で切り取った部屋のスクショをここへ</div>
+      <image-slot id="lec12-scene" shape="rounded" radius="10" placeholder="家具を集めてカメラで切り取った部屋の画面をドラッグ" style="display:block; width:100%; height:300px"></image-slot>
+    </div>
+
+    <!-- SUMMARY -->
+    <div data-reveal="1" style="margin-top:48px; border:1px solid rgba(255,210,122,0.3); border-radius:16px; padding:28px 30px; background:linear-gradient(180deg,rgba(255,122,194,0.08),rgba(90,233,255,0.04)); position:relative; overflow:hidden">
+      <span style="position:absolute; right:18px; top:12px; color:#FFD27A; font-size:18px; animation:kfFloat 4s ease-in-out infinite">✦</span>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.34em; color:#FFD27A">RECAP ── 今日のキー、ぜんぶ</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px">
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(90,233,255,0.5); border-radius:8px; padding:7px 12px; background:rgba(90,233,255,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#5AE9FF">アペンド</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">家具を集める</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(255,79,168,0.5); border-radius:8px; padding:7px 12px; background:rgba(255,79,168,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#FF7AC2">カメラ</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">アングルを決める</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(255,210,122,0.5); border-radius:8px; padding:7px 12px; background:rgba(255,210,122,0.08); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#FFD27A">レンズ</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">広角⇄望遠で印象</span></span>
+        <span style="display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(181,142,255,0.35); border-radius:8px; padding:7px 12px; background:rgba(248,239,255,0.05); font-family:'IBM Plex Mono',monospace; font-size:12px"><span style="color:#5AE9FF">ビューロック</span><span style="font-family:'Noto Sans JP',sans-serif; font-size:11px; color:rgba(248,239,255,0.7)">覗いて構図決め</span></span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:24px; padding-top:18px; border-top:1px dashed rgba(181,142,255,0.3)">
+        <div style="flex:1; min-width:0; font-size:13px; line-height:1.9; color:rgba(248,239,255,0.75)">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:#5AE9FF">NEXT ▸ LEC_13</span><br>
+          <strong style="color:#F8EFFF">ライティングとアニメ絵作り ── 光と影で「時間帯」と「空気感」を演出。窓から差し込む朝日と、フワッとボケる影。</strong>
+        </div>
+        <div style="display:flex; gap:10px">
+          <a href="11.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#5AE9FF; text-decoration:none; border:1px solid rgba(90,233,255,0.4); border-radius:9px; padding:12px 18px; background:rgba(90,233,255,0.06)" data-sh="background:rgba(90,233,255,0.15)">◂ 第11回</a>
+          <a href="13.html" style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.2em; color:#22103d; text-decoration:none; border-radius:9px; padding:12px 20px; background:linear-gradient(135deg,#FF4FA8,#B850FF); font-weight:600; box-shadow:0 0 18px rgba(255,79,168,0.4)" data-sh="box-shadow:0 0 28px rgba(255,79,168,0.65)">第13回へ ▸</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:48px; display:flex; align-items:center; justify-content:center; gap:12px; opacity:0.65">
+      <img src="assets/blender_logo.png" alt="Blender" style="height:22px; filter:drop-shadow(0 0 6px rgba(255,255,255,0.2))">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.3em; color:rgba(181,142,255,0.8)">BLENDER ROOM // アニメ美術のためのBlender入門 · 全15回</span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  document.querySelectorAll('[data-sh]').forEach(function(el){
+    var b=el.getAttribute('style')||'';
+    el.addEventListener('mouseenter',function(){el.style.cssText=b+';'+el.getAttribute('data-sh');});
+    el.addEventListener('mouseleave',function(){el.style.cssText=b;});
+  });
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target);}
+    });
+  },{threshold:0.06});
+  document.querySelectorAll('[data-reveal]').forEach(function(el){
+    var r=el.getBoundingClientRect();
+    if(r.top<window.innerHeight*0.92)return;
+    el.style.opacity='0';el.style.transform='translateY(18px)';
+    el.style.transition='opacity 0.7s ease,transform 0.7s cubic-bezier(0.22,1,0.36,1)';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>
