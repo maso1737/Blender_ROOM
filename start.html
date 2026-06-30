@@ -160,7 +160,7 @@ function keyBadge(k) {
 
 // ── card HTML ─────────────────────────────────────
 function lectureCard(lec) {
-  var ready = lec.no <= 4;
+  var ready = lec.no <= 15;
   var noStr = String(lec.no).padStart(2,'0');
   var href  = ready ? noStr + '.html' : '#';
   var onclick = ready ? '' : ' onclick="return false"';
