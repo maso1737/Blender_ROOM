@@ -14,6 +14,9 @@
 <link rel="stylesheet" href="_ds/kinetic-stage-design-system-bfe4c6e7-5846-4ac3-abfb-b4c3c57ee77d/colors_and_type.css">
 <link rel="stylesheet" href="_ds/kinetic-stage-design-system-bfe4c6e7-5846-4ac3-abfb-b4c3c57ee77d/stage-system.css">
 <script src="_ds/kinetic-stage-design-system-bfe4c6e7-5846-4ac3-abfb-b4c3c57ee77d/_ds_bundle.js"></script>
+<script src="https://unpkg.com/three@0.136.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.136.0/examples/js/loaders/SVGLoader.js"></script>
+<script src="https://unpkg.com/polygon-clipping@0.15.7/dist/polygon-clipping.umd.js"></script>
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:#07030f;overflow:hidden}
@@ -26,12 +29,13 @@
   <div style="position:fixed;inset:0;pointer-events:none;z-index:0;mix-blend-mode:screen;opacity:0.85;animation:kfTw 5s ease-in-out infinite;background-image:radial-gradient(1.5px 1.5px at 22px 34px,rgba(255,255,255,0.8),transparent 60%),radial-gradient(1px 1px at 120px 90px,rgba(255,210,122,0.8),transparent 60%),radial-gradient(1.5px 1.5px at 200px 160px,rgba(181,142,255,0.8),transparent 60%),radial-gradient(1px 1px at 280px 50px,rgba(90,233,255,0.7),transparent 60%),radial-gradient(1.5px 1.5px at 330px 210px,rgba(255,122,194,0.7),transparent 60%);background-size:380px 260px"></div>
 
   <div ref="{{ stageRef }}" style="width:1920px;height:1080px;position:relative;flex:none;transform-origin:center center;z-index:1">
+    <div id="bg3d" style="position:absolute;inset:0;z-index:0;pointer-events:none"></div>
     {{ scene }}
   </div>
 
   <div style="position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:99;display:flex;align-items:center;gap:14px;padding:9px 16px;border-radius:8px;background:rgba(16,7,40,0.72);backdrop-filter:blur(8px);border:1px solid rgba(255,210,122,0.22)">
     <button onClick="{{ onToggle }}" style="width:34px;height:30px;border:1px solid rgba(255,79,168,0.5);border-radius:5px;background:rgba(255,79,168,0.12);color:#F8EFFF;font-size:13px;cursor:pointer;line-height:1">{{ playLabel }}</button>
-    <input type="range" min="0" max="30" step="0.01" value="{{ t }}" onInput="{{ onSeek }}" style="width:340px">
+    <input type="range" min="0" max="39" step="0.01" value="{{ t }}" onInput="{{ onSeek }}" style="width:340px">
     <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;color:#FFD27A;min-width:92px;text-align:right">{{ timeLabel }}</span>
   </div>
 
@@ -41,7 +45,7 @@
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
   state = { t: 0, playing: true };
-  DUR = 30;
+  DUR = 39;
   GRAD = 'linear-gradient(120deg,#FFE9B0,#FFD27A 26%,#FF4FA8 62%,#B58EFF 100%)';
   scaleRef = React.createRef();
 
@@ -51,12 +55,14 @@ class Component extends DCLogic {
 
   // ── math helpers ──
   clamp01(x){ return Math.max(0, Math.min(1, x)); }
+  clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
   seg(t,a,b){ return this.clamp01((b-a) ? (t-a)/(b-a) : 1); }
   mix(p,a,b){ return a+(b-a)*p; }
+  lerp(a,b,p){ return a+(b-a)*p; }
   eOut(p){ return 1-Math.pow(1-p,3); }
   eInOut(p){ return p<.5 ? 4*p*p*p : 1-Math.pow(-2*p+2,3)/2; }
   eBack(p){ const c1=1.70158, c3=c1+1; return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2); }
-  pad(n){ return String(Math.min(900,Math.max(0,Math.floor(n)))).padStart(4,'0'); }
+  pad(n){ return String(Math.min(1170,Math.max(0,Math.floor(n)))).padStart(4,'0'); }
   grad(extra){ return Object.assign({ background:this.GRAD, WebkitBackgroundClip:'text', backgroundClip:'text', WebkitTextFillColor:'transparent', color:'transparent' }, extra||{}); }
 
   // ── lifecycle ──
@@ -73,11 +79,17 @@ class Component extends DCLogic {
     this.fit();
     this._onR = ()=>this.fit();
     window.addEventListener('resize', this._onR);
+    // three.js 背景の初期化（CDN ロード待ち）
+    this._3dWait = setInterval(()=>{
+      this._bg = this._bg || document.getElementById('bg3d');
+      if(window.THREE && THREE.SVGLoader && window.polygonClipping && this._bg){ clearInterval(this._3dWait); try{ this.init3D(); }catch(e){ console.error('init3D failed', e); } }
+    }, 40);
     this._last = performance.now();
     this._raf = requestAnimationFrame(this.loop);
   }
   componentWillUnmount(){
     cancelAnimationFrame(this._raf);
+    clearInterval(this._3dWait);
     window.removeEventListener('resize', this._onR);
   }
   fit = ()=>{
@@ -87,10 +99,12 @@ class Component extends DCLogic {
   };
   loop = (now)=>{
     const dt=Math.min(0.05,(now-this._last)/1000); this._last=now;
+    let t=this.state.t;
     if(this.state.playing){
-      let t=this.state.t+dt; if(t>=this.DUR) t-=this.DUR;
+      t=this.state.t+dt; if(t>=this.DUR) t-=this.DUR;
       this.setState({ t }); this._save(t);
     }
+    if(this.T) { try{ this.apply3D(t, dt); }catch(e){ /* keep loop alive */ } }
     this._raf=requestAnimationFrame(this.loop);
   };
   _save(t){ if(!this._lw||Math.abs(t-this._lw)>0.2){ try{ localStorage.setItem(this._tKey||'blroom_open_t', t); }catch(e){} this._lw=t; } }
@@ -99,137 +113,499 @@ class Component extends DCLogic {
   toggle = ()=> this.setState(s=>({ playing:!s.playing }));
   seek = (e)=>{ const v=parseFloat(e.target.value); this.setState({ playing:false, t:v }); this._save(v); };
 
-  // ════════ SCENE 1 — cube hook (0–5) ════════
-  scene1(t){
-    const h=this.h;
-    const op=this.seg(t,0.1,0.7)*(1-this.seg(t,3.9,4.6));
-    const intro=this.eBack(this.seg(t,0,1.05));
-    const recede=this.mix(this.seg(t,3.5,4.6),1,0.45);
-    const rot=t*36-30, k=intro*recede;
-    const fB={ position:'absolute', left:0, top:0, width:'240px', height:'240px', border:'1.6px solid rgba(255,79,168,0.55)', background:'linear-gradient(135deg,rgba(255,79,168,0.07),rgba(90,233,255,0.045))', boxShadow:'inset 0 0 34px rgba(184,80,255,0.18)' };
-    const f=(tf)=>h('div', Object.assign({}, fB, { transform:tf }));
-    const faces=[f('translateZ(120px)'),f('rotateY(180deg) translateZ(120px)'),f('rotateY(90deg) translateZ(120px)'),f('rotateY(-90deg) translateZ(120px)'),f('rotateX(90deg) translateZ(120px)'),f('rotateX(-90deg) translateZ(120px)')];
-    const glow=h('div',{ position:'absolute', left:'960px', top:'430px', width:'540px', height:'540px', transform:'translate(-50%,-50%)', background:'radial-gradient(circle,rgba(255,79,168,0.20),transparent 62%)', filter:'blur(8px)', opacity:k });
-    const cube=h('div',{ position:'absolute', left:'960px', top:'430px', width:0, height:0, perspective:'1000px' },
-      h('div',{ transformStyle:'preserve-3d', position:'absolute', left:0, top:0, width:'240px', height:'240px', marginLeft:'-120px', marginTop:'-120px', transform:`rotateX(-24deg) rotateY(${rot}deg) scale(${k})` }, faces));
-    const c=this.seg(t,1.15,1.85);
-    const cap=h('div',{ position:'absolute', left:0, right:0, top:'644px', textAlign:'center', opacity:c, transform:`translateY(${this.mix(c,18,0)}px)` },[
-      h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'15px', letterSpacing:'0.42em', color:'#FFD27A', marginBottom:'22px' },'✦  START FROM ONE CUBE'),
-      h('div',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:900, fontSize:'74px', letterSpacing:'0.05em', color:'#F8EFFF' },'サイコロ1個から。'),
-      h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'16px', letterSpacing:'0.3em', color:'rgba(181,142,255,0.92)', marginTop:'22px' },'ここから、部屋をつくる。')
-    ]);
-    return h('div',{ position:'absolute', inset:0, opacity:op },[glow,cube,cap]);
+  // ════════════════════════════════════════════════════════════
+  //  THREE.JS BACKGROUND — room build → door boolean → curtain
+  // ════════════════════════════════════════════════════════════
+  ease3(x){ return x<.5 ? 2*x*x : 1-Math.pow(-2*x+2,2)/2; }
+
+  init3D(){
+    const bg = this._bg;
+    const W = 1920, H = 1080;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(38, W/H, 0.1, 200);
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, preserveDrawingBuffer:true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    renderer.setSize(W,H);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.domElement.style.width='100%'; renderer.domElement.style.height='100%';
+    bg.appendChild(renderer.domElement);
+
+    // lights
+    scene.add(new THREE.AmbientLight(0x3a2a66, 1.0));
+    const pPink = new THREE.PointLight(0xff4fa8, 1.3, 60); pPink.position.set(-7,9,5); scene.add(pPink);
+    const pCyan = new THREE.PointLight(0x5ae9ff, 1.0, 60); pCyan.position.set(9,7,-7); scene.add(pCyan);
+    const dGold = new THREE.DirectionalLight(0xffd27a, 0.5); dGold.position.set(3,12,2); scene.add(dGold);
+
+    // floor grid
+    const grid = new THREE.GridHelper(28, 28, 0x5e4a8f, 0x2a2050);
+    grid.material.transparent = true; grid.material.opacity = 0.32; grid.position.y = -0.01; scene.add(grid);
+
+    // blocking box (dice)
+    const dieGroup = new THREE.Group(); scene.add(dieGroup);
+
+    // ---------- PARSE SVG ----------
+    const loader = new THREE.SVGLoader();
+    const data = loader.parse(this.SVG());
+    const paths = data.paths;
+    const roomPath = paths[0];
+
+    const box = new THREE.Box2(new THREE.Vector2(1e9,1e9), new THREE.Vector2(-1e9,-1e9));
+    roomPath.subPaths.forEach(sp=> sp.getPoints().forEach(p=> box.expandByPoint(p)));
+    const cx=(box.min.x+box.max.x)/2, cy=(box.min.y+box.max.y)/2;
+    const span=Math.max(box.max.x-box.min.x, box.max.y-box.min.y);
+    const S = 10.5/span;
+    const wallH = span*0.32;
+
+    const bboxW=(box.max.x-box.min.x)*S, bboxD=(box.max.y-box.min.y)*S, boxH=wallH*S;
+    const worldPerMM = Math.max(bboxW,bboxD)/5800;
+    const cube2m = 2000*worldPerMM;
+    const blockMat=new THREE.MeshStandardMaterial({color:0x3a1f63,emissive:0xff4fa8,emissiveIntensity:0.22,metalness:0.2,roughness:0.5,transparent:true,opacity:1,side:THREE.DoubleSide});
+    const block=new THREE.Mesh(new THREE.BoxGeometry(1,1,1), blockMat);
+    dieGroup.add(block);
+    const blockEdges=new THREE.LineSegments(new THREE.EdgesGeometry(block.geometry), new THREE.LineBasicMaterial({color:0xff8fce,transparent:true,opacity:0.9}));
+    block.add(blockEdges);
+
+    const lay = (geo)=>{ geo.translate(-cx,-cy,0); geo.scale(S,S,S); geo.rotateX(-Math.PI/2); return geo; };
+    const w2 = (p)=> new THREE.Vector3((p.x-cx)*S, 0, -(p.y-cy)*S);
+
+    const roomGroup = new THREE.Group();
+    roomGroup.scale.z = -1;
+    roomGroup.rotation.y = Math.PI/2;
+    scene.add(roomGroup);
+
+    // ---------- LINES (trace) ----------
+    const lineMat = ()=> new THREE.LineBasicMaterial({ color:0xff4fa8, transparent:true, opacity:0.95 });
+    const allLines = [];
+    const pushLine=(pts2)=>{
+      const pts3 = pts2.map(w2);
+      const g = new THREE.BufferGeometry().setFromPoints(pts3);
+      const ln = new THREE.Line(g, lineMat()); ln.position.y = 0.015; g.setDrawRange(0,0); roomGroup.add(ln);
+      allLines.push({ ln, count: pts3.length, pts3 });
+    };
+    roomPath.subPaths.forEach(sp=> pushLine(sp.getPoints(40)));
+    for(let i=1;i<paths.length;i++) paths[i].subPaths.forEach(sp=> pushLine(sp.getPoints(8)));
+    const NL = allLines.length;
+    allLines.forEach((L,i)=>{ L.s = (i/NL)*0.9; L.e = L.s + (1/NL)*1.35; });
+
+    const tracer = new THREE.Mesh(new THREE.SphereGeometry(0.13,16,16), new THREE.MeshBasicMaterial({color:0x9af3ff}));
+    tracer.visible=false; roomGroup.add(tracer);
+
+    // ---------- door rects (bounding boxes for the boolean cutters) ----------
+    const getShapes=(p)=> (THREE.SVGLoader.createShapes ? THREE.SVGLoader.createShapes(p) : p.toShapes(false));
+    const doorRects = [];
+    for(let i=1;i<paths.length;i++){
+      getShapes(paths[i]).forEach(sh=>{
+        const pts=sh.getPoints();
+        const b=new THREE.Box2(new THREE.Vector2(1e9,1e9), new THREE.Vector2(-1e9,-1e9));
+        pts.forEach(p=>b.expandByPoint(p));
+        doorRects.push({ box:b, center:b.getCenter(new THREE.Vector2()) });
+      });
+    }
+
+    // ---------- FACES (poché flat) ----------
+    const pocheMat = new THREE.MeshBasicMaterial({ color:0xff4fa8, transparent:true, opacity:0, side:THREE.DoubleSide });
+    const pocheGroup = new THREE.Group(); roomGroup.add(pocheGroup);
+    const roomShapes = getShapes(roomPath);
+    roomShapes.forEach(sh=>{ const g=lay(new THREE.ShapeGeometry(sh)); pocheGroup.add(new THREE.Mesh(g, pocheMat)); });
+
+    // ---------- 2D BOOLEAN : subtract slightly-oversized door boxes from the wall band ----------
+    // (door openings cross the wall, so they must be a real gap in the outline — not an
+    //  interior "hole", which would break triangulation. an over-sized cutter guarantees a
+    //  clean cut, exactly like using a slightly bigger boolean box in Blender.)
+    const PC = window.polygonClipping;
+    const closeRing=(arr)=>{ if(arr.length){ const f=arr[0], l=arr[arr.length-1]; if(f[0]!==l[0]||f[1]!==l[1]) arr.push([f[0],f[1]]); } return arr; };
+    const ringOf=(v2arr)=> closeRing(v2arr.map(p=>[p.x,p.y]));
+    const wallMP = roomShapes.map(sh=>{ const ep=sh.extractPoints(1); return [ ringOf(ep.shape), ...ep.holes.map(h=>ringOf(h)) ]; });
+    const INF = Math.max(2.5, span*0.004);   // a few mm of overcut so the box fully crosses the wall
+    const cutterOf=(b)=> [[ [b.min.x-INF,b.min.y-INF],[b.max.x+INF,b.min.y-INF],[b.max.x+INF,b.max.y+INF],[b.min.x-INF,b.max.y+INF],[b.min.x-INF,b.min.y-INF] ]];
+    let cutMP = []; doorRects.forEach(d=>{ cutMP = cutMP.length ? PC.union(cutMP, cutterOf(d.box)) : cutterOf(d.box); });
+    const holedMP = cutMP.length ? PC.difference(wallMP, cutMP) : wallMP;
+
+    const mpToShapes=(mp)=> (mp||[]).map(poly=>{
+      const sh=new THREE.Shape(poly[0].map(p=>new THREE.Vector2(p[0],p[1])));
+      for(let k=1;k<poly.length;k++) sh.holes.push(new THREE.Path(poly[k].map(p=>new THREE.Vector2(p[0],p[1]))));
+      return sh;
+    });
+
+    // ---------- WALLS (extrude clean, with real door gaps) ----------
+    const wallMat = new THREE.MeshStandardMaterial({ color:0x2a1850, emissive:0xff4fa8, emissiveIntensity:0.16, metalness:0.15, roughness:0.55, side:THREE.DoubleSide });
+    const wallsG = new THREE.Group(); wallsG.visible=false; roomGroup.add(wallsG);
+    mpToShapes(holedMP).forEach(sh=>{ const g=lay(new THREE.ExtrudeGeometry(sh,{depth:wallH,bevelEnabled:false})); wallsG.add(new THREE.Mesh(g, wallMat)); });
+    const wallEdges = new THREE.Group();
+    wallsG.children.slice(0).forEach(m=>{ if(m.geometry){ const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({color:0xff8fce,transparent:true,opacity:0.5})); wallEdges.add(e);} });
+    wallsG.add(wallEdges);
+
+    // ---------- DOOR PLUGS = wall ∩ door (exact fill of each gap, retract sequentially) ----------
+    const plugGroup = new THREE.Group(); wallsG.add(plugGroup);
+    const plugs = [];
+    doorRects.forEach(d=>{
+      const inter = PC.intersection(wallMP, cutterOf(d.box));
+      const shapes = mpToShapes(inter);
+      if(!shapes.length) return;
+      const mat = new THREE.MeshStandardMaterial({ color:0x2a1850, emissive:0x5ae9ff, emissiveIntensity:0.16, metalness:0.2, roughness:0.5, transparent:true, opacity:1, side:THREE.DoubleSide });
+      const grp = new THREE.Group(); grp.userData.mat = mat; grp.userData.cx = d.center.x;
+      shapes.forEach(sh=>{ const g=lay(new THREE.ExtrudeGeometry(sh,{depth:wallH,bevelEnabled:false})); grp.add(new THREE.Mesh(g, mat)); });
+      plugGroup.add(grp); plugs.push(grp);
+    });
+    // open the doors left-to-right for a tidy cascade
+    plugs.sort((a,b)=> a.userData.cx - b.userData.cx);
+
+    // ---------- FLOOR PLAN IMAGE ----------
+    // depthTest:false + renderOrder -1 => the plan ignores the depth buffer entirely and always
+    // draws first, behind everything. no coplanar z-fight with the grid no matter the camera angle.
+    const imgMat = new THREE.MeshBasicMaterial({ transparent:true, opacity:0, depthWrite:false, depthTest:false });
+    const planeBase = Math.max(bboxW,bboxD)*1.3;
+    const imgMesh = new THREE.Mesh(new THREE.PlaneGeometry(planeBase, planeBase*(922/1064)), imgMat);
+    imgMesh.rotation.x=-Math.PI/2; imgMesh.position.y=-0.04; imgMesh.renderOrder=-1; scene.add(imgMesh);
+    new THREE.TextureLoader().load('OP/media/s1_room_setting.png', (tx)=>{ tx.encoding=THREE.sRGBEncoding; tx.center.set(0.5,0.5); tx.rotation=Math.PI/2; imgMat.map=tx; imgMat.needsUpdate=true; });
+
+    // ---------- CURTAIN (Verlet cloth) ----------
+    const curtain = this.buildCurtain(scene);
+
+    this.T = { scene, camera, renderer, dieGroup, block, blockEdges, boxH, bboxW, bboxD, cube2m,
+               allLines, tracer, pocheMat, wallsG, plugGroup, plugs, wallH, S, imgMat, grid, roomGroup, curtain };
   }
 
-  // ════════ SCENE 2 — masthead (4–9) ════════
+  // build a hanging curtain made of verlet particles
+  buildCurtain(scene){
+    const NX=48, NY=36, w=5.2, h=5.8;        // RTX-grade: finer mesh = crisper wrinkles
+    const PLEATS=8;                           // number of vertical folds
+    const top=h*0.5;                          // y of the rod
+    const parts=[];
+    const idx=(x,y)=> y*(NX+1)+x;
+    const GATHER=0.12;                          // start width = 12% (a tied bundle) → opens to 100%
+    for(let y=0;y<=NY;y++) for(let x=0;x<=NX;x++){
+      const u=x/NX, v=y/NY;
+      // gathered curtain: deep vertical pleats near the rod, easing (but never flat) at the hem
+      const amp=0.58*(1-0.32*v);
+      const fold=Math.sin(u*Math.PI*2*PLEATS)*amp;
+      const px=(u-0.5)*w, py=top-v*h, pz=fold;
+      // fx = final spread x, gx = bundled x. the reveal lerps the rod between them.
+      parts.push({ x:px,y:py,z:pz, ox:px,oy:py,oz:pz, fx:px, gx:px*GATHER, pin:(y===0) });
+    }
+    // rest length = the ACTUAL initial 3D distance, so the baked pleats ARE the rest shape.
+    // constraint format: [i, j, restDistance, stiffness]
+    const d3=(i,j)=>{ const a=parts[i],b=parts[j]; return Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z); };
+    const cons=[];
+    for(let y=0;y<=NY;y++) for(let x=0;x<=NX;x++){
+      // structural (stretch) — full stiffness
+      if(x<NX) cons.push([idx(x,y), idx(x+1,y), d3(idx(x,y),idx(x+1,y)), 1.0]);
+      if(y<NY) cons.push([idx(x,y), idx(x,y+1), d3(idx(x,y),idx(x,y+1)), 1.0]);
+      // shear (diagonal) — full stiffness
+      if(x<NX && y<NY){
+        cons.push([idx(x,y), idx(x+1,y+1), d3(idx(x,y),idx(x+1,y+1)), 1.0]);
+        cons.push([idx(x+1,y), idx(x,y+1), d3(idx(x+1,y),idx(x,y+1)), 1.0]);
+      }
+      // BEND (2-apart) — soft. distance constraints alone let a pleated sheet "unfold" flat;
+      // bend constraints resist straightening, so the vertical folds actually hold under gravity.
+      if(x<NX-1) cons.push([idx(x,y), idx(x+2,y), d3(idx(x,y),idx(x+2,y)), 0.45]);
+      if(y<NY-1) cons.push([idx(x,y), idx(x,y+2), d3(idx(x,y),idx(x,y+2)), 0.25]);
+    }
+    // start every particle bundled (compressed in x). pins are driven open in apply3D;
+    // the body springs out to the rest-width pleats with Verlet inertia → it sways as it opens.
+    for(const p of parts){ p.x=p.gx; p.ox=(p.pin? p.gx : p.ox); }
+    const geo=new THREE.BufferGeometry();
+    const pos=new Float32Array(parts.length*3);
+    const tris=[];
+    for(let y=0;y<NY;y++) for(let x=0;x<NX;x++){
+      const a=idx(x,y), b=idx(x+1,y), c=idx(x+1,y+1), d=idx(x,y+1);
+      tris.push(a,d,b, b,d,c);
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    geo.setIndex(tris);
+    const mat=new THREE.MeshStandardMaterial({ color:0xf3e3c8, emissive:0xff9ad0, emissiveIntensity:0.10, roughness:0.85, metalness:0.0, side:THREE.DoubleSide, transparent:true, opacity:0 });
+    const mesh=new THREE.Mesh(geo, mat);
+    const group=new THREE.Group(); group.visible=false; group.add(mesh); scene.add(group);
+    // backlight only (the visible "board" glow plane is removed per direction)
+    const back=new THREE.DirectionalLight(0xfff2da, 1.4); back.position.set(0, top, -4); group.add(back);
+    const fill=new THREE.PointLight(0xffd9ec, 0.7, 30); fill.position.set(2.5, top-1, 4); group.add(fill);
+    return { group, mesh, mat, glowMat:null, parts, cons, NX, NY, geo, pos, top, h };
+  }
+
+  // one Verlet/PBD step. mesh refresh (needsUpdate / normals) is left to the caller
+  // so we can warm-up off-screen and refresh on an anime-like limited cadence.
+  stepCurtain(C, dt, t){
+    const damp=0.985, g=-8.5;                                   // a touch heavier & less lossy = cloth, not rubber
+    const wind = (Math.sin(t*1.3)*0.5+0.5)*1.9 + Math.sin(t*3.7)*0.6; // gentle breathing gust (sways, not flaps)
+    const fz = Math.sin(t*0.8)*1.4 + wind*0.35;
+    const dt2=Math.min(dt,0.03), dd=dt2*dt2;
+    for(const p of C.parts){
+      if(p.pin){ p.x=p.ox; p.y=p.oy; p.z=p.oz; continue; }
+      const nx=p.x + (p.x-(p.lx!==undefined?p.lx:p.x))*damp + (wind*0.12)*dd;
+      const ny=p.y + (p.y-(p.ly!==undefined?p.ly:p.y))*damp + g*dd;
+      const nz=p.z + (p.z-(p.lz!==undefined?p.lz:p.z))*damp + (fz*0.10)*dd;
+      p.lx=p.x; p.ly=p.y; p.lz=p.z; p.x=nx; p.y=ny; p.z=nz;
+    }
+    // more constraint iterations → kills the "rubber sheet" stretch, gives crisp folds
+    for(let k=0;k<12;k++){
+      for(const c of C.cons){
+        const a=C.parts[c[0]], b=C.parts[c[1]], rest=c[2], stiff=(c[3]!==undefined?c[3]:1);
+        let dx=b.x-a.x, dy=b.y-a.y, dz=b.z-a.z;
+        const dl=Math.sqrt(dx*dx+dy*dy+dz*dz)||1e-6;
+        const diff=(dl-rest)/dl*0.5*stiff;
+        const ox=dx*diff, oy=dy*diff, oz=dz*diff;
+        if(!a.pin){ a.x+=ox; a.y+=oy; a.z+=oz; }
+        if(!b.pin){ b.x-=ox; b.y-=oy; b.z-=oz; }
+      }
+    }
+    const pos=C.pos;
+    for(let i=0;i<C.parts.length;i++){ const p=C.parts[i]; pos[i*3]=p.x; pos[i*3+1]=p.y; pos[i*3+2]=p.z; }
+  }
+
+  apply3D(t, dt){
+    const T=this.T; if(!T) return;
+    const { camera, renderer, dieGroup, block, blockEdges, allLines, tracer, pocheMat, wallsG, plugGroup, plugs, imgMat, grid, roomGroup, curtain } = T;
+    const lerp=this.lerp.bind(this), ease=this.ease3.bind(this), seg=this.seg.bind(this), clamp=this.clamp.bind(this);
+
+    // overall 3D visibility: build/orbit 0-17, curtain 16.6-22, hidden after
+    const show3D = t<22.4;
+    if(this._bg) this._bg.style.opacity = String(this.clamp01(seg(t,0.0,0.4) * (1-seg(t,21.6,22.4))));
+    if(!show3D){ renderer.render(T.scene, camera); return; }
+
+    const buildPhase = t<16.8;
+    roomGroup.visible = buildPhase;          // hard cut to the curtain at 16.8 (no stray wall-only shot)
+    grid.visible = t<15.0;
+
+    const draw   = seg(t,3.0,7.0);
+    const faceK  = seg(t,7.0,8.5);
+    const extr   = ease(seg(t,8.5,11.0));
+    const planFade = seg(t,1.6,2.4);
+
+    // blocking box (dice)
+    if(t<3){
+      dieGroup.visible = true;
+      const m = ease(seg(t,0.8,2.0));
+      const bw = lerp(T.cube2m, T.bboxW, m), bh = lerp(T.cube2m, T.boxH, m), bd = lerp(T.cube2m, T.bboxD, m);
+      block.scale.set(bw,bh,bd); block.position.y = bh/2;
+      this._boxLookY = bh/2;
+      block.material.opacity = Math.max(0, 1 - ease(seg(t,2.0,2.7)));
+      blockEdges.material.opacity = Math.max(0, 0.9*(1 - seg(t,2.45,3.0)));
+      dieGroup.rotation.y = t*0.9;
+    } else dieGroup.visible = false;
+
+    // lines trace
+    let activePt=null;
+    allLines.forEach(L=>{
+      const f = clamp((draw - L.s)/(L.e - L.s), 0, 1);
+      const n = Math.round(L.count * f);
+      L.ln.geometry.setDrawRange(0, n);
+      L.ln.material.opacity = (0.45 + 0.5*(1-extr*0.4)) * (1-seg(t,14.5,16.0));
+      if(f>0.001 && f<0.999) activePt = L.pts3[Math.min(L.count-1, Math.max(0,n-1))];
+    });
+    if(activePt){ tracer.visible=true; tracer.position.copy(activePt); tracer.position.y=0.05; } else tracer.visible=false;
+
+    // faces
+    pocheMat.opacity = 0.42 * faceK * (1 - extr*0.9);
+
+    // walls extrude
+    wallsG.visible = extr>0.001;
+    wallsG.scale.y = Math.max(0.0001, extr);
+
+    // ── DOOR BOOLEAN (11.0 – 14.5) : glowing box flashes, plug retracts, hole opens ──
+    const N = plugs.length;
+    const bWin0=11.0, bWin1=14.5, bSpan=(bWin1-bWin0);
+    plugs.forEach((grp,i)=>{
+      const mat = grp.userData.mat;
+      const ds = N>1 ? (i/(N-1))*(bSpan-1.0) : 0;    // staggered start
+      const p  = clamp((t - (bWin0+ds))/1.0, 0, 1);  // 0..1 for this door
+      // flash (cyan) for first 45%, then retract & fade
+      const flash = Math.sin(this.clamp01(p/0.45)*Math.PI);
+      mat.emissiveIntensity = 0.16 + flash*2.6;
+      const open = this.eOut(this.clamp01((p-0.45)/0.55));
+      mat.opacity = 1 - open;
+      grp.scale.set(1, Math.max(0.001, 1-open*0.96), 1);   // sink into the floor as it "cuts"
+      grp.visible = (t<bWin0+ds-0.05) ? true : (mat.opacity>0.01);
+    });
+    // before boolean window keep all plugs solid; after, all gone
+    if(t<bWin0){ plugs.forEach(grp=>{ grp.userData.mat.opacity=1; grp.userData.mat.emissiveIntensity=0.16; grp.scale.set(1,1,1); grp.visible=true; }); }
+    if(t>=bWin1){ plugs.forEach(grp=>{ grp.visible=false; }); }
+
+    // floor image
+    imgMat.opacity = planFade * lerp(0.62, 0.18, draw) * (1-seg(t,13.0,15.0));
+
+    // ── camera ──
+    if(buildPhase){
+      // one eased 0→1 drives the whole "stand up & turn" move — ease-in-out, slow start / soft stop.
+      // az is eased in along the SAME curve (no step), which kills the カクッ at the start of the move.
+      const mv = ease(seg(t,1.8,3.8));
+      let el, R;
+      if(t<1.8){ el=27; R=20; }
+      else if(t<3.8){ el=lerp(27,87,mv); R=lerp(20,21,mv); }
+      else if(t<8.5){ el=87; R=21; }
+      else if(t<11){ el=lerp(87,34,extr); R=lerp(21,20,extr); }
+      else { el=34; R=20; }
+      const az = Math.max(0, t-9)*0.5 + lerp(0, 0.12, mv);
+      const elr=el*Math.PI/180, hd=R*Math.cos(elr);
+      camera.position.set(hd*Math.cos(az), R*Math.sin(elr), hd*Math.sin(az));
+      let lookY = (t<1.8) ? (this._boxLookY||T.boxH/2) : lerp((this._boxLookY||T.boxH/2), 0, mv);
+      lookY += lerp(0, T.wallH*T.S*0.45, extr);
+      camera.lookAt(0, lookY, 0);
+    } else {
+      // carry the orbit's rotation straight through the cut (no dead stop) — continuous slow turn,
+      // composed low so the hem stays in frame.
+      const az=(t-16.8)*0.07;
+      camera.position.set(Math.sin(az)*9.4, 1.6, Math.cos(az)*9.4);
+      camera.lookAt(0, -0.1, 0);
+    }
+
+    // ── CURTAIN ──
+    const cShow = t>16.8 && t<22.4;
+    curtain.group.visible = cShow;
+    if(cShow){
+      const o = seg(t,16.8,17.3) * (1-seg(t,21.6,22.3));
+      curtain.mat.opacity = o;
+      // reveal: rod travels from bundle → full width, ease-out so it flings open then decelerates
+      const rev = this.eOut(this.clamp01((t-17.1)/2.3));
+      for(const p of curtain.parts){ if(p.pin) p.ox = lerp(p.gx, p.fx, rev); }
+      // warm-up only the vertical hang for the CURRENT spread (also keeps scrubbing sane)
+      if(!this._curtainWarmedUp){
+        for(let i=0;i<90;i++) this.stepCurtain(curtain, 0.016, t-1.4+i*0.016);
+        curtain.geo.attributes.position.needsUpdate=true; curtain.geo.computeVertexNormals();
+        this._curtainWarmedUp=true;
+      }
+      if(this.state.playing){
+        this.stepCurtain(curtain, dt||0.016, t);
+        // smooth 60fps here (no コマ打ち) so the open + flutter reads as continuous motion
+        curtain.geo.attributes.position.needsUpdate=true; curtain.geo.computeVertexNormals();
+      }
+    } else { this._curtainWarmedUp=false; }
+
+    renderer.render(T.scene, camera);
+  }
+
+  // ════════ SCENE 1 — opening caption over 3D dice (0.4–3.6) ════════
+  scene1(t){
+    const h=this.h;
+    const op=this.seg(t,0.4,1.0)*(1-this.seg(t,3.1,3.6));
+    const c=this.seg(t,0.9,1.7);
+    const cap=h('div',{ position:'absolute', left:0, right:0, top:'700px', textAlign:'center', opacity:c, transform:`translateY(${this.mix(c,18,0)}px)` },[
+      h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'15px', letterSpacing:'0.42em', color:'#FFD27A', marginBottom:'20px' },'✦  START FROM ONE CUBE'),
+      h('div',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:900, fontSize:'72px', letterSpacing:'0.05em', color:'#F8EFFF', textShadow:'0 4px 30px rgba(7,3,15,0.7)' },'サイコロ1個から。'),
+      h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'16px', letterSpacing:'0.3em', color:'rgba(181,142,255,0.92)', marginTop:'20px' },'ここから、部屋をつくる。')
+    ]);
+    return h('div',{ position:'absolute', inset:0, opacity:op },[cap]);
+  }
+
+  // ════════ SCENE 2 — masthead (3.6–7.6) ════════
   scene2(t){
-    const h=this.h, GRAD=this.GRAD;
-    const op=this.seg(t,4.3,4.9)*(1-this.seg(t,8.2,8.8));
-    const rev=this.eOut(this.seg(t,4.4,5.7));
-    const z=this.mix(this.eInOut(this.seg(t,4.3,8.8)),1.07,1.0);
-    const sub=this.seg(t,5.7,6.5);
-    const sweep=this.mix(this.seg(t,4.9,6.7),-45,145);
-    const title=h('div',{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:900, fontStyle:'italic', fontSize:'152px', lineHeight:0.9, letterSpacing:'0.005em', whiteSpace:'nowrap', clipPath:`inset(0 ${100-100*rev}% -30% 0)`, filter:'drop-shadow(0 0 30px rgba(255,79,168,0.35))', ...this.grad() },'BLENDER ROOM');
+    const h=this.h;
+    const op=this.seg(t,3.7,4.3)*(1-this.seg(t,7.0,7.6));
+    const rev=this.eOut(this.seg(t,3.8,5.1));
+    const sub=this.seg(t,5.0,5.8);
+    const sweep=this.mix(this.seg(t,4.2,6.0),-45,145);
+    const title=h('div',{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:900, fontStyle:'italic', fontSize:'150px', lineHeight:0.9, letterSpacing:'0.005em', whiteSpace:'nowrap', clipPath:`inset(0 ${100-100*rev}% -30% 0)`, filter:'drop-shadow(0 0 30px rgba(255,79,168,0.45))', ...this.grad() },'BLENDER ROOM');
     const band=h('div',{ position:'absolute', top:'-6%', bottom:'-6%', left:`${sweep}%`, width:'130px', transform:'skewX(-18deg)', background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.5),transparent)', mixBlendMode:'screen', pointerEvents:'none' });
     return h('div',{ position:'absolute', inset:0, opacity:op, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' },
-      h('div',{ transform:`scale(${z})`, textAlign:'center', position:'relative' },[
-        h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'16px', letterSpacing:'0.42em', color:'#FFD27A', marginBottom:'30px', opacity:this.seg(t,4.6,5.4) },'背景美術のための Blender 入門'),
-        h('div',{ position:'relative', display:'inline-block' },[ title, band ]),
-        h('div',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:700, fontSize:'42px', letterSpacing:'0.18em', color:'#F8EFFF', marginTop:'14px', opacity:sub, transform:`translateY(${this.mix(sub,16,0)}px)` },'部屋を、つくろう。')
+      h('div',{ textAlign:'center', position:'relative' },[
+        h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'16px', letterSpacing:'0.42em', color:'#FFD27A', marginBottom:'26px', opacity:this.seg(t,3.9,4.7) },'背景美術のための Blender 入門'),
+        h('div',{ position:'relative', display:'inline-block', overflow:'hidden' },[ title, band ]),
+        h('div',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:700, fontSize:'42px', letterSpacing:'0.18em', color:'#F8EFFF', marginTop:'14px', opacity:sub, transform:`translateY(${this.mix(sub,16,0)}px)`, textShadow:'0 4px 26px rgba(7,3,15,0.7)' },'部屋を、つくろう。')
       ])
     );
   }
 
-  // ════════ SCENE 3 — the promise (8–14) ════════
+  // ════════ SCENE 3 — the promise (7.8–11.2) ════════
   scene3(t){
-    const h=this.h, GRAD=this.GRAD;
-    const op=this.seg(t,8.4,9.0)*(1-this.seg(t,13.0,13.6));
-    const eye=this.seg(t,8.5,9.1);
-    const L=(s)=>{ const p=this.seg(t,s,s+0.45); const b=this.eBack(this.seg(t,s,s+0.78)); return { o:p, y:this.mix(p,48,0), s:this.mix(b,0.9,1) }; };
-    const l1=L(8.9), l2=L(9.5), l3=L(10.2);
+    const h=this.h;
+    const op=this.seg(t,7.9,8.5)*(1-this.seg(t,10.6,11.2));
+    const eye=this.seg(t,8.0,8.6);
+    const L=(s)=>{ const p=this.seg(t,s,s+0.4); const b=this.eBack(this.seg(t,s,s+0.7)); return { o:p, y:this.mix(p,44,0), s:this.mix(b,0.9,1) }; };
+    const l1=L(8.3), l2=L(8.8), l3=L(9.4);
     const lineWrap=(L,kids)=>h('div',{ opacity:L.o, transform:`translateY(${L.y}px) scale(${L.s})`, transformOrigin:'left center' }, kids);
-    return h('div',{ position:'absolute', inset:0, opacity:op, display:'flex', flexDirection:'column', justifyContent:'center', paddingLeft:'220px' },[
-      h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'15px', letterSpacing:'0.42em', color:'#FFD27A', marginBottom:'40px', opacity:eye },'THE PROMISE // 15回の約束'),
+    const sh1='0 4px 26px rgba(7,3,15,0.7)';                                  // for solid-fill text
+    const shG='drop-shadow(0 3px 16px rgba(7,3,15,0.85))';                    // for gradient (transparent-fill) text
+    return h('div',{ position:'absolute', inset:0, opacity:op, display:'flex', flexDirection:'column', justifyContent:'center', paddingLeft:'200px' },[
+      h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'15px', letterSpacing:'0.42em', color:'#FFD27A', marginBottom:'38px', opacity:eye, textShadow:sh1 },'THE PROMISE // 15回の約束'),
       lineWrap(l1, h('div',{ display:'flex', alignItems:'baseline', gap:'4px' },[
-        h('span', this.grad({ fontFamily:"'Cormorant Garamond',serif", fontStyle:'italic', fontWeight:700, fontSize:'118px', lineHeight:1 }),'15'),
-        h('span',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:900, fontSize:'62px', color:'#F8EFFF', letterSpacing:'0.03em', marginLeft:'10px' },'回で、')
+        h('span', this.grad({ fontFamily:"'Cormorant Garamond',serif", fontStyle:'italic', fontWeight:700, fontSize:'118px', lineHeight:1, filter:shG }),'15'),
+        h('span',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:900, fontSize:'62px', color:'#F8EFFF', letterSpacing:'0.03em', marginLeft:'10px', textShadow:sh1 },'回で、')
       ])),
       lineWrap(l2, h('div',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:900, fontSize:'62px', letterSpacing:'0.03em', color:'#F8EFFF', marginTop:'10px' },[
-        'アニメの',
-        h('span', this.grad({}),'「あの部屋」'),
-        'を'
+        h('span',{ textShadow:sh1 },'アニメの'),
+        h('span', this.grad({ filter:shG }),'「あの部屋」'),
+        h('span',{ textShadow:sh1 },'を')
       ])),
-      lineWrap(l3, h('div', this.grad({ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:900, fontSize:'96px', letterSpacing:'0.03em', marginTop:'12px', filter:'drop-shadow(0 0 26px rgba(255,79,168,0.3))' }),'自分の手で。'))
+      lineWrap(l3, h('div', this.grad({ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:900, fontSize:'96px', letterSpacing:'0.03em', marginTop:'12px', filter:'drop-shadow(0 3px 18px rgba(7,3,15,0.8)) drop-shadow(0 0 26px rgba(255,79,168,0.3))' }),'自分の手で。'))
     ]);
   }
 
-  // ════════ SCENE 4 — pipeline montage (13–21) ════════
-  scene4(t){
-    const h=this.h, GRAD=this.GRAD;
-    const steps=[
-      { jp:'モデリング', en:'MODELING', c:'#B58EFF' },
-      { jp:'布シミュ',   en:'CLOTH SIM', c:'#5AE9FF' },
-      { jp:'色',         en:'TEXTURE', c:'#FFD27A' },
-      { jp:'光',         en:'LIGHTING', c:'#FF4FA8' },
-      { jp:'撮影',       en:'COMPOSITE', c:'#5AE9FF' }
+  // ════════ SCENE D — door boolean caption (11.0–14.6) ════════
+  sceneDoor(t){
+    const h=this.h;
+    const op=this.seg(t,11.1,11.6)*(1-this.seg(t,14.0,14.6));
+    const sub=this.seg(t,11.5,12.1);
+    return h('div',{ position:'absolute', left:0, right:0, top:'120px', textAlign:'center', opacity:op },[
+      h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'15px', letterSpacing:'0.42em', color:'#5AE9FF', textShadow:'0 0 18px rgba(90,233,255,0.6)' },'BOOLEAN // 開口を、くり抜く'),
+      h('div',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:900, fontSize:'58px', letterSpacing:'0.06em', color:'#F8EFFF', marginTop:'16px', opacity:sub, textShadow:'0 4px 26px rgba(7,3,15,0.7)' },'ドアを、開ける。')
+    ]);
+  }
+
+  // ════════ SCENE C — curtain / cloth sim caption (17–22) ════════
+  sceneCloth(t){
+    const h=this.h;
+    const op=this.seg(t,17.2,17.9)*(1-this.seg(t,21.3,22.0));
+    const sub=this.seg(t,17.7,18.4);
+    return h('div',{ position:'absolute', left:0, right:0, top:'120px', textAlign:'center', opacity:op },[
+      h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'15px', letterSpacing:'0.42em', color:'#5AE9FF', textShadow:'0 0 18px rgba(90,233,255,0.5)' },'CLOTH SIM // 物理で、布が落ちる'),
+      h('div',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:900, fontSize:'58px', letterSpacing:'0.06em', color:'#F8EFFF', marginTop:'16px', opacity:sub, textShadow:'0 4px 26px rgba(7,3,15,0.7)' },'布シミュ。')
+    ]);
+  }
+
+  // ════════ SCENE S — color / light / shoot parallax stills (22–29) ════════
+  sceneStills(t){
+    const h=this.h;
+    const op=this.seg(t,22.0,22.5)*(1-this.seg(t,28.4,29.0));
+    const cuts=[
+      { src:'OP/uploads/3.png', s:22.2, e:24.4, jp:'色',   en:'TEXTURE',   c:'#FFD27A' },
+      { src:'OP/uploads/2.png', s:24.4, e:26.6, jp:'光',   en:'LIGHTING',  c:'#FF4FA8' },
+      { src:'OP/uploads/1.png', s:26.6, e:29.0, jp:'撮影', en:'COMPOSITE', c:'#5AE9FF' }
     ];
-    const op=this.seg(t,13.4,13.9)*(1-this.seg(t,20.1,20.6));
-    const t0=13.75, dur=1.18;
-    let idx=Math.floor((t-t0)/dur); idx=Math.max(0,Math.min(4,idx));
-    const lp=(t-t0-idx*dur)/dur;
-    const wi=this.eBack(this.clamp01(lp/0.42));
-    const wo=idx<4 ? this.seg(lp,0.84,1) : 0;
-    const wordY=this.mix(wi,64,0)-wo*64;
-    const wordOp=this.clamp01(lp/0.28)*(1-wo);
-    const cur=steps[idx];
-    const prog=this.clamp01((idx+this.clamp01(lp))/5);
-    const crumbs=steps.map((s,i)=>{
-      const on=i===idx, done=i<idx;
-      return h('div',{ display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' },[
-        h('div', on ? { fontFamily:"'Noto Sans JP',sans-serif", fontWeight:700, fontSize:'22px', letterSpacing:'0.1em', whiteSpace:'nowrap', padding:'7px 16px', borderRadius:'3px', color:'#150927', background:GRAD, boxShadow:'0 0 16px rgba(255,79,168,0.4)' } : { fontFamily:"'Noto Sans JP',sans-serif", fontWeight:500, fontSize:'20px', letterSpacing:'0.1em', whiteSpace:'nowrap', padding:'7px 16px', borderRadius:'3px', color:done?'rgba(248,239,255,0.55)':'rgba(181,142,255,0.5)', border:'1px solid '+(done?'rgba(255,210,122,0.3)':'rgba(181,142,255,0.22)') }, s.jp),
-        h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'9px', letterSpacing:'0.26em', color:on?'#FFD27A':'rgba(181,142,255,0.45)' }, s.en)
+    const drift = Math.sin(t*0.8)*1.4;
+    const layers = cuts.map((cut,i)=>{
+      const inK=this.seg(t,cut.s,cut.s+0.6);
+      const outK=i<2 ? this.seg(t,cut.e-0.5,cut.e+0.1) : 0;
+      const o=this.clamp01(inK*(1-outK));
+      const k=this.seg(t,cut.s,cut.e);              // 0..1 across the shot
+      const z=this.mix(k,1.08,1.20);                // ken burns zoom
+      const px=this.mix(k,-2.2,2.2)+drift;          // slow pan + parallax drift
+      return h('div',{ position:'absolute', inset:0, opacity:o, overflow:'hidden' },[
+        h('div',{ position:'absolute', inset:'-6%', backgroundImage:`url('${cut.src}')`, backgroundSize:'cover', backgroundPosition:'center', transform:`scale(${z}) translateX(${px}%)`, filter:'saturate(1.05)' }),
+        h('div',{ position:'absolute', inset:0, background:'radial-gradient(ellipse 75% 70% at 50% 46%,transparent 40%,rgba(7,3,15,0.55) 100%)' }),
+        h('div',{ position:'absolute', left:'150px', bottom:'300px', opacity:this.seg(t,cut.s+0.2,cut.s+0.8) },[
+          h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'15px', letterSpacing:'0.42em', color:cut.c, textShadow:`0 0 18px ${cut.c}99` }, cut.en),
+          h('div',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:900, fontSize:'120px', lineHeight:1, color:'#F8EFFF', letterSpacing:'0.04em', marginTop:'8px', filter:`drop-shadow(0 6px 30px ${cut.c}55)` }, cut.jp)
+        ])
       ]);
     });
-    return h('div',{ position:'absolute', inset:0, opacity:op },[
-      h('div',{ position:'absolute', left:0, right:0, top:'150px', textAlign:'center', fontFamily:"'IBM Plex Mono',monospace", fontSize:'15px', letterSpacing:'0.42em', color:'#FFD27A' },'PIPELINE // 制作工程は、ぜんぶ自分の手で'),
-      h('div',{ position:'absolute', left:0, right:0, top:'400px', textAlign:'center', opacity:wordOp, transform:`translateY(${wordY}px)` },[
-        h('div',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:900, fontSize:'140px', letterSpacing:'0.04em', lineHeight:1, color:cur.c, filter:`drop-shadow(0 0 34px ${cur.c}66)` }, cur.jp),
-        h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'22px', letterSpacing:'0.5em', color:'rgba(248,239,255,0.8)', marginTop:'24px', paddingLeft:'0.5em' }, cur.en)
-      ]),
-      h('div',{ position:'absolute', left:'160px', right:'160px', bottom:'200px' },[
-        h('div',{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }, crumbs),
-        h('div',{ position:'relative', height:'2px', marginTop:'26px', background:'rgba(181,142,255,0.18)' },
-          h('div',{ position:'absolute', left:0, top:0, height:'2px', width:`${prog*100}%`, background:GRAD, boxShadow:'0 0 10px rgba(255,79,168,0.6)' }))
-      ])
-    ]);
+    return h('div',{ position:'absolute', inset:0, opacity:op, overflow:'hidden', background:'#07030f' }, layers);
   }
 
-  // ════════ SCENE 5 — payoff (20–27) ════════
+  // ════════ SCENE 5 — payoff (29–36) ════════
   scene5(t){
-    const h=this.h, GRAD=this.GRAD;
-    const op=this.seg(t,20.5,21.1)*(1-this.seg(t,26.7,27.2));
-    const z=this.mix(this.eInOut(this.seg(t,20.5,27)),1.0,1.07);
-    const lx=this.mix(this.eInOut(this.seg(t,20.7,26)),-18,86);
-    const a=this.seg(t,21.0,22.2), b=this.seg(t,22.7,23.7);
-    const punch=this.eBack(this.seg(t,24.2,25.1)), pOp=this.seg(t,24.2,24.8);
-    const ghost=h('div',{ position:'absolute', left:'-40px', bottom:'-220px', fontFamily:"'Cormorant Garamond',serif", fontStyle:'italic', fontWeight:700, fontSize:'760px', lineHeight:1, color:'transparent', WebkitTextStroke:'2px rgba(181,142,255,0.16)', transform:`translateX(${this.mix(this.seg(t,20.5,27),0,40)}px)`, pointerEvents:'none' },'15');
+    const h=this.h;
+    const op=this.seg(t,29.0,29.6)*(1-this.seg(t,35.2,35.8));
+    const z=this.mix(this.eInOut(this.seg(t,29.0,35.5)),1.0,1.07);
+    const lx=this.mix(this.eInOut(this.seg(t,29.2,34.5)),-18,86);
+    const a=this.seg(t,29.5,30.7), b=this.seg(t,31.2,32.2);
+    const punch=this.eBack(this.seg(t,32.7,33.6)), pOp=this.seg(t,32.7,33.3);
+    const ghost=h('div',{ position:'absolute', left:'-40px', bottom:'-220px', fontFamily:"'Cormorant Garamond',serif", fontStyle:'italic', fontWeight:700, fontSize:'760px', lineHeight:1, color:'transparent', WebkitTextStroke:'2px rgba(181,142,255,0.16)', transform:`translateX(${this.mix(this.seg(t,29.0,35.5),0,40)}px)`, pointerEvents:'none' },'15');
     const light=h('div',{ position:'absolute', top:'-10%', bottom:'-10%', left:`${lx}%`, width:'420px', transform:'skewX(-15deg)', background:'linear-gradient(90deg,transparent,rgba(255,233,176,0.16),rgba(255,210,122,0.05),transparent)', filter:'blur(6px)', mixBlendMode:'screen', pointerEvents:'none' });
     const text=h('div',{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', transform:`scale(${z})` },[
       h('div',{ fontFamily:"'Noto Serif JP',serif", fontWeight:600, fontSize:'46px', letterSpacing:'0.14em', color:'rgba(248,239,255,0.9)', opacity:a, transform:`translateY(${this.mix(a,18,0)}px)` },'朝日が差し込む、自分の部屋。'),
       h('div',{ fontFamily:"'Noto Serif JP',serif", fontWeight:600, fontSize:'46px', letterSpacing:'0.14em', color:'rgba(248,239,255,0.9)', marginTop:'18px', opacity:b, transform:`translateY(${this.mix(b,18,0)}px)` },'カメラが、ゆっくりと動く。'),
       h('div',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:900, fontSize:'88px', letterSpacing:'0.03em', marginTop:'48px', opacity:pOp, transform:`scale(${this.mix(punch,0.86,1)})`, filter:'drop-shadow(0 0 30px rgba(255,79,168,0.35))', ...this.grad() },'それはもう、アニメのワンカット。')
     ]);
-    return h('div',{ position:'absolute', inset:0, opacity:op, overflow:'hidden' },[ ghost, light, text ]);
+    return h('div',{ position:'absolute', inset:0, opacity:op, overflow:'hidden', background:'#07030f' },[ ghost, light, text ]);
   }
 
-  // ════════ SCENE 6 — lockup (26.5–30) ════════
+  // ════════ SCENE 6 — lockup (35.5–39) ════════
   scene6(t){
     const h=this.h, GRAD=this.GRAD;
-    const op=this.seg(t,26.8,27.4);
-    const a=this.seg(t,26.9,27.6), b=this.seg(t,27.3,28.0), c=this.eBack(this.seg(t,27.7,28.5)), cOp=this.seg(t,27.7,28.2);
+    const op=this.seg(t,35.6,36.2);
+    const a=this.seg(t,35.7,36.4), b=this.seg(t,36.1,36.8), c=this.eBack(this.seg(t,36.5,37.3)), cOp=this.seg(t,36.5,37.0);
     const pulse=0.5+0.5*Math.sin(t*3.2);
     const fl=(ph)=>Math.sin(t*1.6+ph)*8;
-    return h('div',{ position:'absolute', inset:0, opacity:op, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' },[
+    return h('div',{ position:'absolute', inset:0, opacity:op, overflow:'hidden', background:'#07030f', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' },[
       h('div',{ position:'absolute', left:'30%', top:'24%', color:'#FF7AC2', fontSize:'26px', opacity:a, transform:`translateY(${fl(0)}px)` },'✦'),
       h('div',{ position:'absolute', right:'28%', top:'30%', color:'#FFD27A', fontSize:'34px', opacity:a, transform:`translateY(${fl(2)}px)` },'✦'),
       h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'15px', letterSpacing:'0.42em', color:'#FFD27A', marginBottom:'24px', opacity:a },'BLENDER ROOM // 全15回'),
@@ -237,6 +613,33 @@ class Component extends DCLogic {
       h('div',{ fontFamily:"'Noto Sans JP',sans-serif", fontWeight:500, fontSize:'24px', letterSpacing:'0.16em', color:'rgba(248,239,255,0.82)', marginTop:'20px', opacity:b },'サイコロ1個から、カメラが動くアニメ背景まで。'),
       h('div',{ marginTop:'46px', opacity:cOp, transform:`scale(${this.mix(c,0.9,1)})` },
         h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontWeight:600, fontSize:'20px', letterSpacing:'0.2em', color:'#150927', padding:'18px 40px', borderRadius:'9px', background:GRAD, boxShadow:`0 0 ${this.mix(pulse,18,40)}px rgba(255,79,168,${this.mix(pulse,0.4,0.75)})`, cursor:'pointer' },'スタートページへGO! ▸', { onClick:()=>{ this._markSeen(); window.location.href='start.html'; } }))
+    ]);
+  }
+
+  // ════════ pipeline crumbs HUD (9–29) ════════
+  pipelineHUD(t){
+    const h=this.h, GRAD=this.GRAD;
+    const op=this.seg(t,9.0,9.6)*(1-this.seg(t,28.6,29.2));
+    const steps=[
+      { jp:'モデリング', en:'MODELING', s:9.0,  e:16.8 },
+      { jp:'布シミュ',   en:'CLOTH SIM',s:16.8, e:22.0 },
+      { jp:'色',         en:'TEXTURE',  s:22.0, e:24.4 },
+      { jp:'光',         en:'LIGHTING', s:24.4, e:26.6 },
+      { jp:'撮影',       en:'COMPOSITE',s:26.6, e:29.0 }
+    ];
+    let idx=0; steps.forEach((s,i)=>{ if(t>=s.s) idx=i; });
+    const prog=this.seg(t,9.0,29.0);
+    const crumbs=steps.map((s,i)=>{
+      const on=i===idx, done=i<idx;
+      return h('div',{ display:'flex', flexDirection:'column', alignItems:'center', gap:'9px' },[
+        h('div', on ? { fontFamily:"'Noto Sans JP',sans-serif", fontWeight:700, fontSize:'21px', letterSpacing:'0.1em', whiteSpace:'nowrap', padding:'7px 16px', borderRadius:'3px', color:'#150927', background:GRAD, boxShadow:'0 0 16px rgba(255,79,168,0.4)' } : { fontFamily:"'Noto Sans JP',sans-serif", fontWeight:500, fontSize:'19px', letterSpacing:'0.1em', whiteSpace:'nowrap', padding:'7px 16px', borderRadius:'3px', color:done?'rgba(248,239,255,0.55)':'rgba(181,142,255,0.5)', border:'1px solid '+(done?'rgba(255,210,122,0.3)':'rgba(181,142,255,0.22)') }, s.jp),
+        h('div',{ fontFamily:"'IBM Plex Mono',monospace", fontSize:'9px', letterSpacing:'0.26em', color:on?'#FFD27A':'rgba(181,142,255,0.45)' }, s.en)
+      ]);
+    });
+    return h('div',{ position:'absolute', left:'160px', right:'160px', bottom:'120px', opacity:op, zIndex:15 },[
+      h('div',{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }, crumbs),
+      h('div',{ position:'relative', height:'2px', marginTop:'22px', background:'rgba(181,142,255,0.18)' },
+        h('div',{ position:'absolute', left:0, top:0, height:'2px', width:`${prog*100}%`, background:GRAD, boxShadow:'0 0 10px rgba(255,79,168,0.6)' }))
     ]);
   }
 
@@ -251,44 +654,65 @@ class Component extends DCLogic {
     return h('div', Object.assign({}, base, m[pos]));
   }
   chrome(t){
-    const h=this.h, GRAD=this.GRAD;
+    const h=this.h;
     const ml={ fontFamily:"'IBM Plex Mono',monospace", fontSize:'13px', letterSpacing:'0.28em' };
     return h('div',{ position:'absolute', inset:0, pointerEvents:'none', zIndex:20 },[
       this.corner('tl'), this.corner('tr'), this.corner('bl'), this.corner('br'),
-      h('div',{ position:'absolute', left:0, top:0, height:'3px', width:`${(t/this.DUR)*100}%`, background:GRAD, boxShadow:'0 0 10px rgba(255,79,168,0.6)' }),
+      h('div',{ position:'absolute', left:0, top:0, height:'3px', width:`${(t/this.DUR)*100}%`, background:this.GRAD, boxShadow:'0 0 10px rgba(255,79,168,0.6)' }),
       h('div',{ position:'absolute', left:'90px', top:'52px', display:'flex', alignItems:'center', gap:'10px' },[
         h('span', Object.assign({ color:'#FFD27A' }, { fontSize:'14px' }),'✦'),
         h('span', this.grad({ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:900, fontStyle:'italic', fontSize:'17px', letterSpacing:'0.04em' }),'BLENDER ROOM'),
         h('span', Object.assign({}, ml, { color:'rgba(181,142,255,0.85)', fontSize:'10px' }),'// OPENING')
       ]),
       h('div', Object.assign({ position:'absolute', right:'90px', top:'54px', color:'rgba(181,142,255,0.85)', fontSize:'10px' }, ml),'ANIME BG STUDIO · 背景美術 × Blender'),
-      h('div', Object.assign({ position:'absolute', left:'90px', bottom:'52px', color:'#FFD27A', fontSize:'10px' }, ml),'FRAME '+this.pad(t*30)+' / 0900'),
+      h('div', Object.assign({ position:'absolute', left:'90px', bottom:'52px', color:'#FFD27A', fontSize:'10px' }, ml),'FRAME '+this.pad(t*30)+' / 1170'),
       h('div', Object.assign({ position:'absolute', right:'90px', bottom:'52px', color:'#5AE9FF', fontSize:'10px' }, ml),'LEC 00 ▸ 15')
     ]);
   }
 
   renderStage(t){
     const k=[];
-    if(t<5.0) k.push(this.scene1(t));
-    if(t>4.0 && t<9.2) k.push(this.scene2(t));
-    if(t>8.0 && t<14.0) k.push(this.scene3(t));
-    if(t>13.0 && t<21.0) k.push(this.scene4(t));
-    if(t>20.0 && t<27.4) k.push(this.scene5(t));
-    if(t>26.4) k.push(this.scene6(t));
+    if(t<3.6)              k.push(this.scene1(t));
+    if(t>3.6 && t<7.7)     k.push(this.scene2(t));
+    if(t>7.8 && t<11.2)    k.push(this.scene3(t));
+    if(t>11.0 && t<14.6)   k.push(this.sceneDoor(t));
+    if(t>17.1 && t<22.0)   k.push(this.sceneCloth(t));
+    if(t>21.9 && t<29.1)   k.push(this.sceneStills(t));
+    if(t>28.9 && t<35.9)   k.push(this.scene5(t));
+    if(t>35.5)             k.push(this.scene6(t));
+    if(t>9.0 && t<29.2)    k.push(this.pipelineHUD(t));
     k.push(this.chrome(t));
-    return this.h('div',{ position:'absolute', inset:0 }, k);
+    return this.h('div',{ position:'absolute', inset:0, zIndex:1 }, k);
+  }
+
+  SVG(){
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 691.5 798">'
+    +'<g id="room"><path d="M21.66,135.41v60.88h38.29V587.9H39.22l0.59,80.2h552V135.41H21.66z M76.69,175.19h60.88v-15.8h178.2v320.2h-150.1v-26.93h-24.59v-96H76.69V175.19z M217.57,588.27H81.76v-93.66h135.8V588.27z M396.49,653.83H222.05v-50.34h8.2V489.14h85.51v106.15h80.73V653.83z M567.22,612.56h-44.78v41.27h-115.9l0.39-58.54h160.29V612.56z M567.22,585.53H325.47V159.39h195.51v17.56h46.24V585.53z"/></g>'
+    +'<g id="door">'
+    +'<rect x="315.76" y="508.27" width="9.71" height="66.73"/>'
+    +'<rect x="217.57" y="498.02" width="12.68" height="43.41"/>'
+    +'<rect x="244.59" y="479.29" width="68.2" height="9.85"/>'
+    +'<rect x="215.32" y="606.31" width="6.73" height="42.73"/>'
+    +'<rect x="318.74" y="595.29" width="9.95" height="58.54"/>'
+    +'<rect x="406.93" y="585.53" width="160.29" height="9.76"/>'
+    +'<rect x="348.4" y="135.41" width="145.95" height="23.97"/>'
+    +'<rect x="137.57" y="135.41" width="137.07" height="23.97"/>'
+    +'<rect x="131.91" y="367.49" width="9.17" height="85.17"/>'
+    +'<rect x="222.05" y="653.83" width="75.8" height="14.27"/>'
+    +'</g></svg>';
   }
 
   renderVals(){
     return {
       scene: this.renderStage(this.state.t),
       stageRef: this.scaleRef,
+
       t: this.state.t,
       onSeek: this.seek,
       onToggle: this.toggle,
       onGoStart: this.goStart,
       playLabel: this.state.playing ? '❚❚' : '▶',
-      timeLabel: this.state.t.toFixed(1) + ' / 30.0'
+      timeLabel: this.state.t.toFixed(1) + ' / 39.0'
     };
   }
 }
